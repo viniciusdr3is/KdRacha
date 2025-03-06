@@ -3,7 +3,7 @@ import { initializeApp } from 'firebase/app';  // Para inicializar o Firebase
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'; // Para autenticação e criação de usuário
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCMoRoLs8bnNqtT8wWUoHs-wfdNCioRCeU",
+  apiKey: "",
   authDomain: "kdracha-367ff.firebaseapp.com",
   projectId: "kdracha-367ff",
   storageBucket: "kdracha-367ff.firebasestorage.app",
