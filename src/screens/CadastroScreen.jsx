@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, TouchableOpacity, StyleSheet } from 'react-native'; 
-import { Picker } from '@react-native-picker/picker';
+import { View, Text, TextInput, Button, Alert, TouchableOpacity, StyleSheet } from 'react-native';
+import { createUserWithEmailAndPassword, auth, db } from '../firebase/config';
+import { doc, setDoc } from 'firebase/firestore';
 
 const CadastroScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -20,17 +21,29 @@ const CadastroScreen = ({ navigation }) => {
     }
 
     try {
-      // Código para criar usuário no Firebase (com auth, como discutido anteriormente)
-      console.log('Usuário criado com sucesso!');
+      const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+      const { uid } = userCredential.user;
+
+      // Salvando dados adicionais no Firestore
+      await setDoc(doc(db, 'usuarios', uid), {
+        email,
+        tipo: tipoUsuario,
+        criadoEm: new Date()
+      });
+
       Alert.alert('Cadastro realizado com sucesso!', 'Agora você pode fazer login.');
-
-      // Navegar para a tela de login após o cadastro
-      navigation.navigate('Login'); 
-
+      navigation.navigate('Login');
     } catch (error) {
-      // Exibindo o erro, se houver
       console.error('Erro ao criar usuário:', error);
-      Alert.alert('Erro de cadastro', error.message);
+      let mensagemErro = 'Erro ao realizar cadastro. Tente novamente.';
+      if (error.code === 'auth/email-already-in-use') {
+        mensagemErro = 'Este email já está em uso.';
+      } else if (error.code === 'auth/invalid-email') {
+        mensagemErro = 'Email inválido.';
+      } else if (error.code === 'auth/weak-password') {
+        mensagemErro = 'A senha deve ter pelo menos 6 caracteres.';
+      }
+      Alert.alert('Erro de cadastro', mensagemErro);
     }
   };
 
@@ -43,6 +56,8 @@ const CadastroScreen = ({ navigation }) => {
         value={email}
         onChangeText={setEmail}
         style={styles.input}
+        autoCapitalize="none"
+        keyboardType="email-address"
       />
       <TextInput
         placeholder="Digite sua senha"
@@ -59,9 +74,7 @@ const CadastroScreen = ({ navigation }) => {
         style={styles.input}
       />
 
-      {/* Seleção do tipo de usuário com botões */}
       <Text style={styles.subtitle}>Selecione o tipo de usuário</Text>
-
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.userButton, tipoUsuario === 'jogador' && styles.selectedButton]}
@@ -79,7 +92,6 @@ const CadastroScreen = ({ navigation }) => {
 
       <Button title="Cadastrar" onPress={handleCadastro} />
 
-      {/* Link para a tela de login */}
       <Text style={styles.loginText}>
         Já tem uma conta?{' '}
         <Text
@@ -93,7 +105,6 @@ const CadastroScreen = ({ navigation }) => {
   );
 };
 
-// Estilos melhorados para a tela
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -134,7 +145,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedButton: {
-    backgroundColor: '#4CAF50', // Cor verde para o botão selecionado
+    backgroundColor: '#4CAF50',
   },
   buttonText: {
     fontSize: 16,

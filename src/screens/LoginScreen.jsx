@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { TextInput, Button, Alert, View, Text } from 'react-native';
-import { auth } from '../firebase/config';  // Importando o auth do Firebase
-import { signInWithEmailAndPassword } from 'firebase/auth';  // Função para login do Firebase
+import React, { useState, useContext } from 'react';
+import { View, Text, TextInput, Button, Alert, ActivityIndicator } from 'react-native';
+import { AuthContext } from '../context/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [loadingLogin, setLoadingLogin] = useState(false);
+
+  const { login, carregando, usuario } = useContext(AuthContext);
 
   const handleLogin = async () => {
     if (!email || !senha) {
@@ -14,20 +16,33 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
-      // Tentando logar com o Firebase Auth
-      const userCredential = await signInWithEmailAndPassword(auth, email, senha);
-      
-      console.log('Usuário logado com sucesso:', userCredential);
+      setLoadingLogin(true);
+      const user = await login(email, senha);
 
-      // Redireciona para a tela de Jogos se o login for bem-sucedido
-      navigation.replace('Jogos');  // Redireciona para a tela de Lista de Jogos
-
+      if (user) {
+        if (user.tipo === 'dono-quadra') {
+          navigation.replace('GestaoJogos');
+        } else {
+          navigation.replace('Jogos');
+        }
+      }
     } catch (error) {
-      // Caso haja erro, exibe uma mensagem
-      console.error('Erro ao fazer login:', error);
+      console.warn('Erro ao fazer login:', error);
       Alert.alert('Erro de login', error.message);
+    } finally {
+      setLoadingLogin(false);
     }
   };
+
+  // Mostra um loading enquanto o contexto está carregando o estado inicial
+  if (carregando) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Verificando login...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
@@ -58,15 +73,16 @@ const LoginScreen = ({ navigation }) => {
           borderRadius: 5,
         }}
       />
-      <Button title="Entrar" onPress={handleLogin} />
 
-      {/* Adicionando o botão para redirecionar para a tela de Cadastro */}
+      {loadingLogin ? (
+        <ActivityIndicator size="small" color="#0000ff" />
+      ) : (
+        <Button title="Entrar" onPress={handleLogin} />
+      )}
+
       <Text style={{ marginTop: 20 }}>
         Não tem uma conta?{' '}
-        <Text
-          style={{ color: 'blue' }}
-          onPress={() => navigation.navigate('Cadastro')}  // Navega para a tela de Cadastro
-        >
+        <Text style={{ color: 'blue' }} onPress={() => navigation.navigate('Cadastro')}>
           Cadastre-se aqui
         </Text>
       </Text>
