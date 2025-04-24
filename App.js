@@ -1,14 +1,13 @@
 import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 
-import HomeScreen from './src/screens/HomeScreen';
-import CadastroScreen from './src/screens/CadastroScreen';
-import LoginScreen from './src/screens/LoginScreen';
-import JogosScreen from './src/screens/JogosScreen';
-// import GestaoJogosScreen from './src/screens/GestaoJogosScreen'; // descomente se necessário
+// rotas
+import CadastroScreen from './src/screens/auth/CadastroScreen';
+import LoginScreen from './src/screens/auth/LoginScreen';
+import JogadorNavigation from './src/navigation/JogadorNavigation';
+import DonoQuadraNavigation from './src/navigation/DonoQuadraNavigation';
 
 const Stack = createStackNavigator();
 
@@ -21,18 +20,21 @@ const AppRoutes = () => {
 
   const rotaInicial = usuario
     ? usuario.tipo === 'dono-quadra'
-      ? 'Home'
-      : 'Jogos'
+      ? 'Dono'
+      : 'Jogador'
     : 'Login';
 
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName={rotaInicial}>
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Dono" component={DonoQuadraNavigation} />
+        <Stack.Screen name="Jogador" component={JogadorNavigation} options={{ headerShown: false }}  />
         <Stack.Screen name="Cadastro" component={CadastroScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Jogos" component={JogosScreen} />
-        {/* <Stack.Screen name="GestaoJogos" component={GestaoJogosScreen} /> */}
+        <Stack.Screen 
+          name="Login" 
+          component={LoginScreen} 
+          options={{ headerShown: false }} 
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
