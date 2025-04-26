@@ -19,8 +19,8 @@ const JogoDetalhesScreen = ({ route }) => {
 
       <View style={{ marginTop: 30 }}>
         <Button 
-          title="Voltar para Menu de Jogos" 
-          onPress={() => navigation.navigate('Jogos')} 
+          title="Inscrever-se"
+          onPress={() => navigation.navigate('Inscricao', { jogo })} 
           color="#1e90ff"
         />
       </View>

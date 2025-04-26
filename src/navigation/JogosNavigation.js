@@ -10,7 +10,7 @@ export default function JogosNavigation() {
     return (
 
             <Stack.Navigator initialRouteName="Jogos">
-                <Stack.Screen name="Jogos" component={JogosScreen} />
+                <Stack.Screen name="Jogos" component={JogosScreen} options={{ headerShown: false }}/>
                 <Stack.Screen name="JogosDetalhes" component={JogosDetalhesScreen} />
             </Stack.Navigator>
 
