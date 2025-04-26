@@ -1,46 +1,28 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { inscreverEmJogo, buscarInscricoesDoUsuario } from '../../firebase/config.js';
 import { useNavigation } from '@react-navigation/native';
+import { buscarInscricoesDoUsuario } from '../../firebase/config.js';
 import { jogos } from '../../data/jogos.js';
 import { AuthContext } from '../../context/AuthContext.jsx';
 
-
-
-
-const JogosScreen = () => {
-  const [inscritos, setInscritos] = useState([]);
+const InscricoesScreen = () => {
+  const [inscricoes, setInscricoes] = useState([]);
   const navigation = useNavigation();
-  const { usuario, carregando } = useContext(AuthContext);
-  const dono = false
- 
-
+  const { usuario } = useContext(AuthContext);
+  const donoinscricao = false;
 
   useEffect(() => {
     const carregarInscricoes = async () => {
       const ids = await buscarInscricoesDoUsuario();
-      setInscritos(ids);
+      const jogosInscritos = jogos.filter(jogo => ids.includes(jogo.id));
+      setInscricoes(jogosInscritos);
     };
+
     carregarInscricoes();
   }, []);
 
-  const handleInscricao = async (id) => {
-    try {
-      if (!inscritos.includes(id)) {
-        await inscreverEmJogo(id);
-        setInscritos([...inscritos, id]);
-        Alert.alert('Inscrição realizada!', 'Você se inscreveu com sucesso.');
-      }
-    } catch (e) {
-      Alert.alert('Erro ao se inscrever', e.message);
-    }
-  };
-
-  const handleAbrirDetalhes = (jogo) => {
-    navigation.navigate('JogosDetalhes', {
-      jogo,
-      inscrito: inscritos.includes(jogo.id),
-    });
+  const abrirDetalhes = (jogo) => {
+    navigation.navigate('DetalhesInscricao', { jogo });
   };
 
   const renderItem = ({ item }) => (
@@ -49,16 +31,8 @@ const JogosScreen = () => {
       <View style={styles.info}>
         <Text style={styles.local}>{item.local}</Text>
         <Text style={styles.tipo}>{item.tipo} ⚽ {item.horario}</Text>
-        <Text style={styles.jogadores}>
-          Jogadores: {item.jogadores} {inscritos.includes(item.id) && '✅ Inscrito'}
-        </Text>
-        <TouchableOpacity
-          style={styles.botao}
-          onPress={(e) => {
-            e.stopPropagation(); // previne o card de roubar o clique
-            handleAbrirDetalhes(item.id);
-            
-          }}>
+        <Text style={styles.jogadores}>Jogadores: {item.jogadores}</Text>
+        <TouchableOpacity style={styles.botao} onPress={() => abrirDetalhes(item)}>
           <Text style={styles.botaoTexto}>🔍</Text>
         </TouchableOpacity>
       </View>
@@ -67,8 +41,12 @@ const JogosScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>{dono ? "Lista de Jogos" : 'Escolha um jogo'}</Text>
-      <FlatList data={jogos} renderItem={renderItem} keyExtractor={(item) => item.id} />
+      <Text style={styles.titulo}>{donoinscricao ? "Adicionar Jogos" : 'Meus Jogos Inscritos'}</Text>
+      <FlatList
+        data={inscricoes}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+      />
     </View>
   );
 };
@@ -80,6 +58,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   titulo: {
+    marginTop: 20,
     fontSize: 20,
     color: '#fff',
     marginBottom: 10,
@@ -108,9 +87,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 5,
   },
-  detalhes: {
-    flexDirection: 'column',
-  },
   tipo: {
     fontSize: 14,
     color: '#bbb',
@@ -127,13 +103,13 @@ const styles = StyleSheet.create({
     marginTop: 5,
     alignItems: 'center',
     width: 100,
-    alignSelf: 'flex-end', // Aligns the button to the right
+    alignSelf: 'flex-end',
   },
   botaoTexto: {
     color: '#fff',
     fontWeight: 'bold',
-    textAlign: 'right', // Aligns the text inside the button to the right
+    textAlign: 'right',
   },
 });
 
-export default JogosScreen;
+export default InscricoesScreen;
