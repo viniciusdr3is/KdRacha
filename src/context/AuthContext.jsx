@@ -1,5 +1,6 @@
 import React, { createContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
@@ -10,13 +11,27 @@ export const AuthProvider = ({ children }) => {
     const [carregando, setCarregando] = useState(true);
 
     useEffect(() => {
+        const carregarUsuarioLocal = async () => {
+            try {
+                const usuarioLocal = await AsyncStorage.getItem('@usuario');
+                if (usuarioLocal) {
+                    setUsuario(JSON.parse(usuarioLocal));
+                }
+            } catch (error) {
+                console.error('Erro ao carregar usuário do storage:', error);
+            }
+            setCarregando(false);
+        };
+
+        carregarUsuarioLocal();
+
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 await carregarDadosUsuario(user);
             } else {
                 setUsuario(null);
+                await AsyncStorage.removeItem('@usuario');
             }
-            setCarregando(false);
         });
 
         return () => unsubscribe();
@@ -28,14 +43,17 @@ export const AuthProvider = ({ children }) => {
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
-                setUsuario({
+                const dadosUsuario = {
                     uid: user.uid,
                     email: user.email,
                     tipo: docSnap.data().tipo,
                     ...docSnap.data(),
-                });
+                };
+                setUsuario(dadosUsuario);
+                await AsyncStorage.setItem('@usuario', JSON.stringify(dadosUsuario));
             } else {
                 setUsuario(null);
+                await AsyncStorage.removeItem('@usuario');
             }
         } catch (error) {
             console.error('Erro ao buscar dados do usuário:', error);

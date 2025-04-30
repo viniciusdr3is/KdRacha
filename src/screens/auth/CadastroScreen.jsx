@@ -8,53 +8,45 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../../firebase/config';
+import { useCadastro } from '../../hooks/useCadastro';
 
 const CadastroScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [tipoUsuario, setTipoUsuario] = useState('jogador');
-  const [carregando, setCarregando] = useState(false);
+  const [cep, setCep] = useState('');
+  const [endereco, setEndereco] = useState({});
+  const [numero, setNumero] = useState('');
+  const [complemento, setComplemento] = useState('');
+  const { cadastrar, carregando, buscarEnderecoPorCep } = useCadastro();
 
   const handleCadastro = async () => {
-    if (!email || !senha || !confirmarSenha) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos.');
-      return;
-    }
+    const enderecoCompleto = cep ? { ...endereco, numero, complemento } : null;
+    await cadastrar({
+      email,
+      senha,
+      confirmarSenha,
+      tipoUsuario,
+      endereco: enderecoCompleto,
+    });
+  };
 
-    if (senha !== confirmarSenha) {
-      Alert.alert('Erro', 'As senhas não coincidem.');
-      return;
-    }
-
-    try {
-      setCarregando(true);
-      const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-      const { uid } = userCredential.user;
-
-      await setDoc(doc(db, 'usuarios', uid), {
-        email,
-        tipo: tipoUsuario,
-        criadoEm: new Date(),
-      });
-
-      Alert.alert('Cadastro realizado com sucesso!', 'Agora você pode fazer login.');
-      navigation.navigate('Login');
-    } catch (error) {
-      let mensagemErro = 'Erro ao realizar cadastro. Tente novamente.';
-      if (error.code === 'auth/email-already-in-use') {
-        mensagemErro = 'Este email já está em uso.';
-      } else if (error.code === 'auth/invalid-email') {
-        mensagemErro = 'Email inválido.';
-      } else if (error.code === 'auth/weak-password') {
-        mensagemErro = 'A senha deve ter pelo menos 6 caracteres.';
+  const handleCepBlur = async () => {
+    if (cep.length === 8) {
+      const enderecoEncontrado = await buscarEnderecoPorCep(cep);
+      if (enderecoEncontrado && !enderecoEncontrado.erro) {
+        setEndereco({
+          rua: enderecoEncontrado.logradouro,
+          bairro: enderecoEncontrado.bairro,
+          cidade: enderecoEncontrado.localidade,
+          estado: enderecoEncontrado.uf,
+        });
+      } else {
+        Alert.alert('Erro', 'CEP não encontrado.');
       }
-      Alert.alert('Erro de cadastro', mensagemErro);
-    } finally {
-      setCarregando(false);
+    } else {
+      Alert.alert('Erro', 'CEP inválido.');
     }
   };
 
@@ -109,6 +101,60 @@ const CadastroScreen = ({ navigation }) => {
           <Text style={styles.buttonText}>Dono de Quadra</Text>
         </TouchableOpacity>
       </View>
+
+      <TextInput
+        placeholder="CEP"
+        placeholderTextColor="#888"
+        value={cep}
+        onChangeText={setCep}
+        onBlur={handleCepBlur}
+        style={styles.input}
+        keyboardType="numeric"
+      />
+      {endereco.rua && (
+        <>
+          <TextInput
+            placeholder="Rua"
+            value={endereco.rua}
+            style={styles.input}
+            editable={false}
+          />
+          <TextInput
+            placeholder="Bairro"
+            value={endereco.bairro}
+            style={styles.input}
+            editable={false}
+          />
+          <TextInput
+            placeholder="Cidade"
+            value={endereco.cidade}
+            style={styles.input}
+            editable={false}
+          />
+          <TextInput
+            placeholder="Estado"
+            value={endereco.estado}
+            style={styles.input}
+            editable={false}
+          />
+        </>
+      )}
+
+      <TextInput
+        placeholder="Número"
+        placeholderTextColor="#888"
+        value={numero}
+        onChangeText={setNumero}
+        style={styles.input}
+        keyboardType="numeric"
+      />
+      <TextInput
+        placeholder="Complemento"
+        placeholderTextColor="#888"
+        value={complemento}
+        onChangeText={setComplemento}
+        style={styles.input}
+      />
 
       {carregando ? (
         <ActivityIndicator size="small" color="#1e90ff" />
