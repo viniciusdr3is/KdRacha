@@ -9,12 +9,14 @@ import {
   Alert,
 } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
+import { useAuthRedirect } from '../../hooks/useAuthRedirect';
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loadingLogin, setLoadingLogin] = useState(false);
   const { login, carregando } = useContext(AuthContext);
+  const { redirectUser } = useAuthRedirect();
 
   const handleLogin = async () => {
     if (!email || !senha) {
@@ -24,17 +26,11 @@ const LoginScreen = ({ navigation }) => {
 
     try {
       setLoadingLogin(true);
-      const user = await login(email, senha);
-      if (user) {
-        if (user.tipo === 'dono-quadra') {
-          navigation.replace('GestaoJogos');
-        } else {
-          navigation.replace('Jogador');
-        }
-      }
+      await login(email, senha);
+      await redirectUser();
     } catch (error) {
       console.warn('Erro ao fazer login:', error);
-      Alert.alert('Erro de login', error.message);
+      Alert.alert('Erro de login', 'Email ou senha inválidos.');
     } finally {
       setLoadingLogin(false);
     }
