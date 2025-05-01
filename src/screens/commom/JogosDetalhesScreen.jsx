@@ -1,10 +1,36 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, Button } from 'react-native';
+import React, { useContext, useState, useEffect } from 'react';
+import { View, Text, Image, StyleSheet, Button, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { inscreverEmJogo, buscarInscricoesDoUsuario } from '../../firebase/config';
+import { AuthContext } from '../../context/AuthContext';
 
 const JogoDetalhesScreen = ({ route }) => {
-  const navigation = useNavigation(); // <- isso estava faltando!
-  const { jogo, inscrito } = route.params;
+  const { jogo } = route.params;
+  const { usuario } = useContext(AuthContext);
+  const [inscrito, setInscrito] = useState(false);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const verificarInscricao = async () => {
+      const ids = await buscarInscricoesDoUsuario();
+      setInscrito(ids.includes(jogo.id));
+    };
+    verificarInscricao();
+  }, []);
+
+  const handleInscricao = async () => {
+    try {
+      if (!inscrito) {
+        await inscreverEmJogo(jogo.id);
+        setInscrito(true);
+        Alert.alert('Inscrição realizada!', 'Você se inscreveu com sucesso.');
+      } else {
+        Alert.alert('Você já está inscrito neste jogo.');
+      }
+    } catch (e) {
+      Alert.alert('Erro', e.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -18,10 +44,11 @@ const JogoDetalhesScreen = ({ route }) => {
       </Text>
 
       <View style={{ marginTop: 30 }}>
-        <Button 
-          title="Inscrever-se"
-          onPress={() => navigation.navigate('Inscricao', { jogo })} 
+        <Button
+          title={inscrito ? "Inscrito" : "Inscrever-se"}
+          onPress={handleInscricao}
           color="#1e90ff"
+          disabled={inscrito}
         />
       </View>
     </View>
