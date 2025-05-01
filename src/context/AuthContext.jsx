@@ -1,7 +1,7 @@
 import React, { createContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
 export const AuthContext = createContext();
@@ -13,12 +13,12 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const carregarUsuarioLocal = async () => {
             try {
-                const usuarioLocal = await AsyncStorage.getItem('@usuario');
-                if (usuarioLocal) {
-                    setUsuario(JSON.parse(usuarioLocal));
+                const userData = await AsyncStorage.getItem('usuario');
+                if (userData) {
+                    setUsuario(JSON.parse(userData));
                 }
             } catch (error) {
-                console.error('Erro ao carregar usuário do storage:', error);
+                console.error('Erro ao carregar usuário local:', error);
             }
             setCarregando(false);
         };
@@ -28,9 +28,6 @@ export const AuthProvider = ({ children }) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 await carregarDadosUsuario(user);
-            } else {
-                setUsuario(null);
-                await AsyncStorage.removeItem('@usuario');
             }
         });
 
@@ -43,17 +40,16 @@ export const AuthProvider = ({ children }) => {
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
-                const dadosUsuario = {
+                const userData = {
                     uid: user.uid,
                     email: user.email,
-                    tipo: docSnap.data().tipo,
                     ...docSnap.data(),
                 };
-                setUsuario(dadosUsuario);
-                await AsyncStorage.setItem('@usuario', JSON.stringify(dadosUsuario));
+                setUsuario(userData);
+                await AsyncStorage.setItem('usuario', JSON.stringify(userData));
             } else {
                 setUsuario(null);
-                await AsyncStorage.removeItem('@usuario');
+                await AsyncStorage.removeItem('usuario');
             }
         } catch (error) {
             console.error('Erro ao buscar dados do usuário:', error);
@@ -69,10 +65,27 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         await signOut(auth);
         setUsuario(null);
+        await AsyncStorage.removeItem('usuario');
+    };
+
+    const registrar = async (email, senha, nome, endereco, tipo) => {
+        const cred = await createUserWithEmailAndPassword(auth, email, senha);
+        const user = cred.user;
+
+        await setDoc(doc(db, 'usuarios', user.uid), {
+            nome,
+            endereco,
+            tipo,
+            email: user.email,
+            criadoEm: new Date(),
+        });
+
+        await carregarDadosUsuario(user);
+        return user;
     };
 
     return (
-        <AuthContext.Provider value={{ usuario, setUsuario, carregando, login, logout }}>
+        <AuthContext.Provider value={{ usuario, carregando, login, logout, registrar }}>
             {children}
         </AuthContext.Provider>
     );
