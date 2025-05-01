@@ -56,7 +56,7 @@ const JogosScreen = () => {
           style={styles.botao}
           onPress={(e) => {
             e.stopPropagation(); // previne o card de roubar o clique
-            handleAbrirDetalhes(item.id);
+            handleAbrirDetalhes(item);
             
           }}>
           <Text style={styles.botaoTexto}>🔍</Text>

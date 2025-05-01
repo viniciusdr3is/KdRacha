@@ -1,7 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCsxQIOpLMwfvgB0gGX2mrxF2zmU-IUB-U",
@@ -14,11 +13,32 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-
+const auth = getAuth(app);
 const db = getFirestore(app);
 
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
+const inscreverEmJogo = async (jogoId) => {
+  const userId = auth.currentUser?.uid;
+  if (!userId) throw new Error("Usuário não autenticado");
 
-export { auth, db };
+  await setDoc(doc(db, 'inscricoes', `${userId}_${jogoId}`), {
+    userId,
+    jogoId,
+  });
+};
+
+const buscarInscricoesDoUsuario = async () => {
+  const userId = auth.currentUser?.uid;
+  if (!userId) throw new Error("Usuário não autenticado");
+
+  const q = query(collection(db, 'inscricoes'), where('userId', '==', userId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => doc.data().jogoId);
+};
+
+export {
+  auth,
+  db,
+  createUserWithEmailAndPassword,
+  inscreverEmJogo,
+  buscarInscricoesDoUsuario
+};
