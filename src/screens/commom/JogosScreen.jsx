@@ -1,40 +1,45 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { inscreverEmJogo, buscarInscricoesDoUsuario } from '../../firebase/config.js';
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  Alert
+} from 'react-native';
+import {
+  inscreverEmJogo,
+  buscarInscricoesDoUsuario
+} from '../../firebase/config.js';
 import { useNavigation } from '@react-navigation/native';
-import { jogos } from '../../data/jogos.js';
+import { ouvirJogosEmTempoReal } from '../../data/jogos'; // 🔁 Novo import
 import { AuthContext } from '../../context/AuthContext.jsx';
 
-
-
-
 const JogosScreen = () => {
+  const [jogos, setJogos] = useState([]);
   const [inscritos, setInscritos] = useState([]);
   const navigation = useNavigation();
-  const { usuario, carregando } = useContext(AuthContext);
-  const dono = false
- 
+  const { usuario } = useContext(AuthContext);
 
+  const dono = usuario?.tipo === 'dono-quadra';
+
+  useEffect(() => {
+    const unsubscribe = ouvirJogosEmTempoReal(setJogos);
+    return () => unsubscribe(); // limpa escuta ao sair da tela
+  }, []);
 
   useEffect(() => {
     const carregarInscricoes = async () => {
-      const ids = await buscarInscricoesDoUsuario();
-      setInscritos(ids);
+      try {
+        const ids = await buscarInscricoesDoUsuario();
+        setInscritos(ids);
+      } catch (error) {
+        console.error("Erro ao carregar inscrições:", error);
+      }
     };
     carregarInscricoes();
   }, []);
-
-  const handleInscricao = async (id) => {
-    try {
-      if (!inscritos.includes(id)) {
-        await inscreverEmJogo(id);
-        setInscritos([...inscritos, id]);
-        Alert.alert('Inscrição realizada!', 'Você se inscreveu com sucesso.');
-      }
-    } catch (e) {
-      Alert.alert('Erro ao se inscrever', e.message);
-    }
-  };
 
   const handleAbrirDetalhes = (jogo) => {
     navigation.navigate('JogosDetalhes', {
@@ -48,17 +53,21 @@ const JogosScreen = () => {
       <Image source={{ uri: item.imagem }} style={styles.imagem} />
       <View style={styles.info}>
         <Text style={styles.local}>{item.local}</Text>
-        <Text style={styles.tipo}>{item.tipo} ⚽ {item.horario}</Text>
-        <Text style={styles.jogadores}>
-          Jogadores: {item.jogadores} {inscritos.includes(item.id) && '✅ Inscrito'}
+        <Text style={styles.tipo}>
+          {item.tipo} ⚽ {item.horario}
         </Text>
+        <Text style={styles.jogadores}>
+          Jogadores: {item.jogadores ?? 0} / {item.vagas ??'?'}
+          {inscritos.includes(item.id) && '✅ Inscrito'}
+        </Text>
+        <Text style={styles.valor}> Valor:{item.valor}</Text>
         <TouchableOpacity
           style={styles.botao}
           onPress={(e) => {
-            e.stopPropagation(); // previne o card de roubar o clique
+            e.stopPropagation();
             handleAbrirDetalhes(item);
-            
-          }}>
+          }}
+        >
           <Text style={styles.botaoTexto}>🔍</Text>
         </TouchableOpacity>
       </View>
@@ -67,8 +76,24 @@ const JogosScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>{dono ? "Lista de Jogos" : 'Escolha um jogo'}</Text>
-      <FlatList data={jogos} renderItem={renderItem} keyExtractor={(item) => item.id} />
+      <Text style={styles.titulo}>
+        {dono ? 'Lista de Jogos' : 'Escolha um jogo'}
+      </Text>
+
+      {dono && (
+        <TouchableOpacity
+          style={styles.botaoAdicionar}
+          onPress={() => navigation.navigate('CadastrarJogo')}
+        >
+          <Text style={styles.botaoTexto}>+ Adicionar Jogo</Text>
+        </TouchableOpacity>
+      )}
+
+      <FlatList
+        data={jogos}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+      />
     </View>
   );
 };
@@ -84,6 +109,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 10,
     fontWeight: 'bold',
+  },
+  botaoAdicionar: {
+    backgroundColor: '#1e90ff',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 15,
   },
   card: {
     flexDirection: 'row',
@@ -108,9 +140,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 5,
   },
-  detalhes: {
-    flexDirection: 'column',
-  },
   tipo: {
     fontSize: 14,
     color: '#bbb',
@@ -120,6 +149,11 @@ const styles = StyleSheet.create({
     color: '#bbb',
     marginTop: 2,
   },
+  valor: {
+    fontSize: 14,
+    color: '#1e90ff',
+    marginTop: 10,
+  },
   botao: {
     backgroundColor: '#1e90ff',
     padding: 8,
@@ -127,12 +161,12 @@ const styles = StyleSheet.create({
     marginTop: 5,
     alignItems: 'center',
     width: 100,
-    alignSelf: 'flex-end', // Aligns the button to the right
+    alignSelf: 'flex-end',
   },
   botaoTexto: {
     color: '#fff',
     fontWeight: 'bold',
-    textAlign: 'right', // Aligns the text inside the button to the right
+    textAlign: 'center',
   },
 });
 

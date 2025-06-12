@@ -10,19 +10,31 @@ const JogoDetalhesScreen = ({ route }) => {
   const [inscrito, setInscrito] = useState(false);
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const verificarInscricao = async () => {
+  const verificarInscricao = async () => {
+    try {
       const ids = await buscarInscricoesDoUsuario();
       setInscrito(ids.includes(jogo.id));
+    } catch (error) {
+      console.error("Erro ao verificar inscrição:", error);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    const carregar = async () => {
+      if (isMounted) await verificarInscricao();
     };
-    verificarInscricao();
-  }, []);
+    carregar();
+    return () => {
+      isMounted = false;
+    };
+  }, [jogo.id]);
 
   const handleInscricao = async () => {
     try {
       if (!inscrito) {
         await inscreverEmJogo(jogo.id);
-        setInscrito(true);
+        await verificarInscricao(); // Revalida inscrição após ação
         Alert.alert('Inscrição realizada!', 'Você se inscreveu com sucesso.');
       } else {
         Alert.alert('Você já está inscrito neste jogo.');
@@ -39,18 +51,22 @@ const JogoDetalhesScreen = ({ route }) => {
       <Text style={styles.texto}>Tipo: {jogo.tipo}</Text>
       <Text style={styles.texto}>Horário: {jogo.horario}</Text>
       <Text style={styles.texto}>Jogadores: {jogo.jogadores}</Text>
-      <Text style={[styles.status, { color: inscrito ? 'green' : 'red' }]}>
-        {inscrito ? 'Você está inscrito neste jogo!' : 'Você ainda não se inscreveu.'}
-      </Text>
+      {usuario?.tipo === 'jogador' && (
+  <>
+    <Text style={[styles.status, { color: inscrito ? 'green' : 'red' }]}>
+      {inscrito ? 'Você está inscrito neste jogo!' : 'Você ainda não se inscreveu.'}
+    </Text>
 
-      <View style={{ marginTop: 30 }}>
-        <Button
-          title={inscrito ? "Inscrito" : "Inscrever-se"}
-          onPress={handleInscricao}
-          color="#1e90ff"
-          disabled={inscrito}
-        />
-      </View>
+    <View style={{ marginTop: 30 }}>
+      <Button
+        title={inscrito ? "Inscrito" : "Inscrever-se"}
+        onPress={handleInscricao}
+        color="#1e90ff"
+        disabled={inscrito}
+      />
+    </View>
+  </>
+)}
     </View>
   );
 };

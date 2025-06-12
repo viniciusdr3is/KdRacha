@@ -1,7 +1,17 @@
-export const jogos = [
-  { id: '1', local: 'Arena Uberlândia, Martins', tipo: 'OUTDOOR', horario: '18:00', jogadores: '15/18', imagem: 'https://tntsports.com.br/__export/1724167770540/sites/esporteinterativo/img/2024/08/20/novo_camp_nou_1_1.png_554688468.png', data:"2025-04-02" },
-  { id: '2', local: 'Parque do Sabiá, Tibery', tipo: 'INDOOR', horario: '18:30', jogadores: '12/16', imagem: 'https://tntsports.com.br/__export/1724167770540/sites/esporteinterativo/img/2024/08/20/novo_camp_nou_1_1.png_554688468.png' },
-  { id: '3', local: 'Coca Cola, Custódio', tipo: 'OUTDOOR', horario: '19:00', jogadores: '11/14', imagem: 'https://tntsports.com.br/__export/1724167770540/sites/esporteinterativo/img/2024/08/20/novo_camp_nou_1_1.png_554688468.png' },
-  { id: '4', local: 'Coca Cola, Custódio', tipo: 'OUTDOOR', horario: '19:00', jogadores: '11/14', imagem: 'https://tntsports.com.br/__export/1724167770540/sites/esporteinterativo/img/2024/08/20/novo_camp_nou_1_1.png_554688468.png' },
-  { id: '5', local: 'Coca Cola, Custódio', tipo: 'OUTDOOR', horario: '19:00', jogadores: '11/14', imagem: 'https://tntsports.com.br/__export/1724167770540/sites/esporteinterativo/img/2024/08/20/novo_camp_nou_1_1.png_554688468.png' },
-];
+import { db } from '../firebase/config'; // caminho ajustado ao seu projeto
+import { collection, onSnapshot } from 'firebase/firestore';
+
+export const ouvirJogosEmTempoReal = (callback) => {
+  const jogosRef = collection(db, 'jogos');
+
+  return onSnapshot(jogosRef, (snapshot) => {
+    const jogos = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    callback(jogos);
+  }, (error) => {
+    console.error("Erro ao escutar jogos em tempo real:", error);
+  });
+};

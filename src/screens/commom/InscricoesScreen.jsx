@@ -1,25 +1,45 @@
+// src/screens/InscricoesScreen.jsx
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { buscarInscricoesDoUsuario } from '../../firebase/config.js';
-import { jogos } from '../../data/jogos.js';
+import { collection, getDoc, getDocs, doc } from 'firebase/firestore';
+import { db } from '../../firebase/config.js';
 import { AuthContext } from '../../context/AuthContext.jsx';
 
 const InscricoesScreen = () => {
   const [inscricoes, setInscricoes] = useState([]);
   const navigation = useNavigation();
   const { usuario } = useContext(AuthContext);
-  const donoinscricao = false;
 
-  useEffect(() => {
-    const carregarInscricoes = async () => {
+useEffect(() => {
+  const carregarJogosInscritos = async () => {
+    try {
       const ids = await buscarInscricoesDoUsuario();
-      const jogosInscritos = jogos.filter(jogo => ids.includes(jogo.id));
-      setInscricoes(jogosInscritos);
-    };
+      console.log("IDs recebidos:", ids);
 
-    carregarInscricoes();
-  }, []);
+      const jogosPromises = ids.map(async (id) => {
+        const docRef = doc(db, 'jogos', id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          return { id, ...docSnap.data() };
+        } else {
+          console.warn(`Jogo com ID ${id} não encontrado`);
+          return null;
+        }
+      });
+
+      const jogosInscritos = (await Promise.all(jogosPromises)).filter(j => j !== null);
+      console.log("Jogos encontrados:", jogosInscritos);
+      setInscricoes(jogosInscritos);
+    } catch (error) {
+      console.error("Erro ao carregar jogos inscritos:", error);
+    }
+  };
+
+  carregarJogosInscritos();
+}, []);
+
 
   const abrirDetalhes = (jogo) => {
     navigation.navigate('DetalhesInscricao', { jogo });
@@ -32,6 +52,7 @@ const InscricoesScreen = () => {
         <Text style={styles.local}>{item.local}</Text>
         <Text style={styles.tipo}>{item.tipo} ⚽ {item.horario}</Text>
         <Text style={styles.jogadores}>Jogadores: {item.jogadores}</Text>
+        <Text style={styles.valor}> Valor:{item.valor}</Text>
         <TouchableOpacity style={styles.botao} onPress={() => abrirDetalhes(item)}>
           <Text style={styles.botaoTexto}>🔍</Text>
         </TouchableOpacity>
@@ -41,11 +62,12 @@ const InscricoesScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>{donoinscricao ? "Adicionar Jogos" : 'Meus Jogos Inscritos'}</Text>
+      <Text style={styles.titulo}>Meus Jogos Inscritos</Text>
       <FlatList
         data={inscricoes}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
+        ListEmptyComponent={<Text style={{ color: '#fff' }}>Nenhuma inscrição encontrada.</Text>}
       />
     </View>
   );
@@ -76,6 +98,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 10,
+  },
+  valor: {
+    fontSize: 14,
+    color: '#1e90ff',
+    marginTop: 10,
   },
   info: {
     marginLeft: 15,

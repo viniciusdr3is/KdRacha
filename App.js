@@ -27,7 +27,7 @@ const AppRoutes = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName={rotaInicial}>
-        <Stack.Screen name="Dono" component={DonoQuadraNavigation} />
+        <Stack.Screen name="Dono" component={DonoQuadraNavigation} options={{ headerShown: false }} />
         <Stack.Screen name="Jogador" component={JogadorNavigation} options={{ headerShown: false }}  />
         <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ headerShown: false }} />
         <Stack.Screen 

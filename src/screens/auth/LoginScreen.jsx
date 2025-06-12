@@ -7,11 +7,15 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
+  Image,
 } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import { useAuthRedirect } from '../../hooks/useAuthRedirect';
+import { useNavigation } from '@react-navigation/native';
+import Logo from '../../../assets/logo.png'; // Importe a logo se necessário
 
 const LoginScreen = () => {
+  const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loadingLogin, setLoadingLogin] = useState(false);
@@ -47,6 +51,7 @@ const LoginScreen = () => {
 
   return (
     <View style={styles.container}>
+      <Image source={Logo} style={styles.logo} />
       <Text style={styles.titulo}>Bem-vindo</Text>
       <TextInput
         placeholder="Email"
@@ -91,6 +96,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+  logo: {
+  width: 150,
+  height: 150,
+  marginBottom: 20,
+  resizeMode: 'contain',
+},
   loadingContainer: {
     flex: 1,
     backgroundColor: '#000',
