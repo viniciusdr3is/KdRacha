@@ -16,7 +16,7 @@ KdRacha é um aplicativo mobile que facilita a procura e organização de jogos 
 
 1. Clone o repositório:
     ```bash
-    git clone <url-do-repositorio>
+    git clone <https://github.com/Jhowkley/Kdracha.git>
     cd Kdracha
     ```
 2. Instale as dependências:
