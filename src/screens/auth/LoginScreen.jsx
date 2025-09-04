@@ -12,7 +12,7 @@ import {
 import { AuthContext } from '../../context/AuthContext';
 import { useAuthRedirect } from '../../hooks/useAuthRedirect';
 import { useNavigation } from '@react-navigation/native';
-import Logo from '../../../assets/logo.png'; // Importe a logo se necessário
+import Logo from '../../../assets/logo.png'; 
 
 const LoginScreen = () => {
   const navigation = useNavigation();
