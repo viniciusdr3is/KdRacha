@@ -8,7 +8,8 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { cadastrarJogo } from '../../firebase/config'; // Função personalizada de cadastro
+import { cadastrarJogo } from '../../firebase/config';
+import { useNavigation } from '@react-navigation/native';
 
 const CadastrarJogoScreen = () => {
   const [nome, setNome] = useState('');
@@ -19,12 +20,13 @@ const CadastrarJogoScreen = () => {
   const [vagas, setVagas] = useState('');
   const [valor, setValor] = useState('');
   const [tipo, setTipo] = useState('');
-  const [jogadores, setJogadores] = useState('');
   const [imagem, setImagem] = useState('');
+  
+  const navigation = useNavigation();
 
   const handleCadastrar = async () => {
-    if (!nome || !local || !telefone || !data || !horario || !vagas || !valor || !tipo || !jogadores) {
-      Alert.alert('Erro', 'Preencha todos os campos.');
+    if (!nome || !local || !data || !horario || !vagas || !valor || !tipo) {
+      Alert.alert('Atenção', 'Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
@@ -32,30 +34,20 @@ const CadastrarJogoScreen = () => {
       nome,
       local,
       telefone,
-      data,         // como string, ex: "08/06/2025"
-      horario,      // como string, ex: "14:30"
-      vagas,        // string, mesmo que numérica
-      valor,        // string, ex: "30.00"
-      tipo,         // ex: "Futebol Society"
-      jogadores,    // string, ex: "10"
-      imagem,       // pode ser vazia ou URL
+      data,
+      horario,
+      vagas: parseInt(vagas, 10), 
+      valor: valor.replace(',', '.'),
+      tipo,
+      jogadores: 0, 
+      imagem,
     };
 
     try {
-      const id = await cadastrarJogo(novoJogo);
-      Alert.alert('Sucesso', `Jogo cadastrado com sucesso!\nID: ${id}`);
+      await cadastrarJogo(novoJogo);
+      Alert.alert('Sucesso', 'Jogo cadastrado com sucesso!');
+      navigation.goBack(); 
 
-      // Resetar campos
-      setNome('');
-      setLocal('');
-      setTelefone('');
-      setData('');
-      setHorario('');
-      setVagas('');
-      setValor('');
-      setTipo('');
-      setJogadores('');
-      setImagem('');
     } catch (error) {
       console.error('Erro ao cadastrar jogo:', error);
       Alert.alert('Erro', 'Não foi possível cadastrar o jogo.');
@@ -63,22 +55,21 @@ const CadastrarJogoScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
       <Text style={styles.titulo}>Cadastrar Novo Jogo</Text>
 
-      <TextInput style={styles.input} placeholder="Nome do Jogo (ex: Nome Quadra)" placeholderTextColor="#777" value={nome} onChangeText={setNome} />
-      <TextInput style={styles.input} placeholder="Local" placeholderTextColor="#777" value={local} onChangeText={setLocal} />
-      <TextInput style={styles.input} placeholder="Telefone" placeholderTextColor="#777" value={telefone} onChangeText={setTelefone} />
-      <TextInput style={styles.input} placeholder="Data (DD/MM/AAAA)" placeholderTextColor="#777" value={data} onChangeText={setData} />
-      <TextInput style={styles.input} placeholder="Horário (HH:MM)" placeholderTextColor="#777" value={horario} onChangeText={setHorario} />
-      <TextInput style={styles.input} placeholder="Quantidade de Vagas" placeholderTextColor="#777" value={vagas} onChangeText={setVagas} keyboardType="numeric" />
-      <TextInput style={styles.input} placeholder="Valor (R$)" placeholderTextColor="#777" value={valor} onChangeText={setValor} keyboardType="numeric" />
-      <TextInput style={styles.input} placeholder="Tipo (ex: Society)" placeholderTextColor="#777" value={tipo} onChangeText={setTipo} />
-      <TextInput style={styles.input} placeholder="Número de Jogadores" placeholderTextColor="#777" value={jogadores} onChangeText={setJogadores} keyboardType="numeric" />
-      <TextInput style={styles.input} placeholder="Imagem (URL opcional)" placeholderTextColor="#777" value={imagem} onChangeText={setImagem} />
+      <TextInput style={styles.input} placeholder="Nome do Jogo (ex: Racha da Noite)" placeholderTextColor="#888" value={nome} onChangeText={setNome} />
+      <TextInput style={styles.input} placeholder="Local" placeholderTextColor="#888" value={local} onChangeText={setLocal} />
+      <TextInput style={styles.input} placeholder="Telefone de Contato" placeholderTextColor="#888" value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" />
+      <TextInput style={styles.input} placeholder="Data (DD/MM/AAAA)" placeholderTextColor="#888" value={data} onChangeText={setData} />
+      <TextInput style={styles.input} placeholder="Horário (HH:MM)" placeholderTextColor="#888" value={horario} onChangeText={setHorario} />
+      <TextInput style={styles.input} placeholder="Total de Vagas" placeholderTextColor="#888" value={vagas} onChangeText={setVagas} keyboardType="numeric" />
+      <TextInput style={styles.input} placeholder="Valor por Jogador (ex: 10,00)" placeholderTextColor="#888" value={valor} onChangeText={setValor} keyboardType="decimal-pad" />
+      <TextInput style={styles.input} placeholder="Tipo (ex: Society, Futsal, Campo)" placeholderTextColor="#888" value={tipo} onChangeText={setTipo} />
+      <TextInput style={styles.input} placeholder="URL da Imagem (opcional)" placeholderTextColor="#888" value={imagem} onChangeText={setImagem} />
 
       <TouchableOpacity style={styles.botao} onPress={handleCadastrar}>
-        <Text style={styles.botaoTexto}>Cadastrar</Text>
+        <Text style={styles.botaoTexto}>Cadastrar Jogo</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -92,24 +83,29 @@ const styles = StyleSheet.create({
   },
   titulo: {
     color: '#fff',
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    textAlign: 'center',
+    marginTop: 20,
   },
   input: {
-    backgroundColor: '#111',
+    backgroundColor: '#1C1C1E',
     color: '#fff',
-    padding: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     borderRadius: 8,
-    borderColor: '#333',
     borderWidth: 1,
+    borderColor: '#3A3A3C',
     marginBottom: 15,
+    fontSize: 16,
   },
   botao: {
     backgroundColor: '#1e90ff',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
+    marginTop: 10,
   },
   botaoTexto: {
     color: '#fff',
@@ -119,3 +115,4 @@ const styles = StyleSheet.create({
 });
 
 export default CadastrarJogoScreen;
+

@@ -11,7 +11,7 @@ export default function DonoQuadraNavigation() {
         <Tab.Navigator initialRouteName={'Home'}>
             <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
             <Tab.Screen name="Perfil" component={PerfilScreen} options={{ headerShown: false }} />
-            <Tab.Screen name="JogosDono" component={DonoCadastroNavigation} options={{ headerShown: false }} />
+            <Tab.Screen name="Jogos" component={DonoCadastroNavigation} options={{ headerShown: false, title: 'Meus Jogos'}} />
 
             </Tab.Navigator>
 

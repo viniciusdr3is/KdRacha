@@ -1,73 +1,114 @@
-// src/screens/InscricoesScreen.jsx
-import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { buscarInscricoesDoUsuario } from '../../firebase/config.js';
-import { collection, getDoc, getDocs, doc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config.js';
-import { AuthContext } from '../../context/AuthContext.jsx';
 
 const InscricoesScreen = () => {
-  const [inscricoes, setInscricoes] = useState([]);
+  const [jogosInscritos, setJogosInscritos] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
-  const { usuario } = useContext(AuthContext);
 
-useEffect(() => {
-  const carregarJogosInscritos = async () => {
-    try {
-      const ids = await buscarInscricoesDoUsuario();
-      console.log("IDs recebidos:", ids);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      setLoading(true);
 
-      const jogosPromises = ids.map(async (id) => {
-        const docRef = doc(db, 'jogos', id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          return { id, ...docSnap.data() };
-        } else {
-          console.warn(`Jogo com ID ${id} não encontrado`);
-          return null;
+      const carregarJogosInscritos = async () => {
+        try {
+          const inscricoes = await buscarInscricoesDoUsuario();
+          
+          const jogosPromises = inscricoes.map(async (inscricao) => {
+            const docRef = doc(db, 'jogos', inscricao.jogoId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              // Verifica se os dados estão aninhados dentro de 'jogoData'
+              if (data.jogoData) {
+                // Se sim, "achatamos" a estrutura para que o resto do ecrã funcione
+                return {
+                  id: docSnap.id,
+                  criadorId: data.criadorId,
+                  ...data.jogoData, // Usamos o spread operator para espalhar os dados aninhados
+                  inscricaoInfo: inscricao
+                };
+              } else {
+                // Se não (dados antigos), usamos a estrutura normal "achatada"
+                return { ...data, id: docSnap.id, inscricaoInfo: inscricao };
+              }
+            }
+            return null;
+          });
+
+          const jogos = (await Promise.all(jogosPromises)).filter(j => j !== null);
+
+          if (isActive) {
+            setJogosInscritos(jogos);
+          }
+        } catch (error) {
+          console.error("Erro ao carregar jogos inscritos:", error);
+        } finally {
+          if (isActive) {
+            setLoading(false);
+          }
         }
-      });
+      };
 
-      const jogosInscritos = (await Promise.all(jogosPromises)).filter(j => j !== null);
-      console.log("Jogos encontrados:", jogosInscritos);
-      setInscricoes(jogosInscritos);
-    } catch (error) {
-      console.error("Erro ao carregar jogos inscritos:", error);
-    }
-  };
+      carregarJogosInscritos();
 
-  carregarJogosInscritos();
-}, []);
-
+      return () => { isActive = false };
+    }, [])
+  );
 
   const abrirDetalhes = (jogo) => {
-    navigation.navigate('DetalhesInscricao', { jogo });
+    navigation.navigate('JogosNav', {      
+      screen: 'JogosDetalhes',            
+      params: { jogo },                   
+    });
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.card}>
-      <Image source={{ uri: item.imagem }} style={styles.imagem} />
+    <View style={styles.card}>
+      {item.imagem ? (
+        <Image source={{ uri: item.imagem }} style={styles.imagem} />
+      ) : (
+        <View style={[styles.imagem, { backgroundColor: '#333' }]} />
+      )}
       <View style={styles.info}>
-        <Text style={styles.local}>{item.local}</Text>
+        <Text style={styles.local}>{item.nome || item.local}</Text>
         <Text style={styles.tipo}>{item.tipo} ⚽ {item.horario}</Text>
-        <Text style={styles.jogadores}>Jogadores: {item.jogadores}</Text>
-        <Text style={styles.valor}> Valor:{item.valor}</Text>
-        <TouchableOpacity style={styles.botao} onPress={() => abrirDetalhes(item)}>
-          <Text style={styles.botaoTexto}>🔍</Text>
+        <Text style={styles.valor}>Valor: R$ {item.valor}</Text>
+        <Text style={styles.metodo}>
+          Pagamento foi feito via: <Text style={{textTransform: 'capitalize'}}>{item.inscricaoInfo.metodo}</Text>
+        </Text>
+        
+        <TouchableOpacity 
+          style={styles.botao} 
+          onPress={() => abrirDetalhes(item)}
+        >
+          <Text style={styles.botaoTexto}>🔍 Detalhes</Text>
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Meus Jogos Inscritos</Text>
+      <Text style={styles.titulo}>Minhas Inscrições</Text>
       <FlatList
-        data={inscricoes}
+        data={jogosInscritos}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={{ color: '#fff' }}>Nenhuma inscrição encontrada.</Text>}
+        ListEmptyComponent={<Text style={styles.textoVazio}>Nenhuma inscrição encontrada.</Text>}
       />
     </View>
   );
@@ -80,11 +121,12 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   titulo: {
-    marginTop: 20,
-    fontSize: 20,
+    marginTop: 30,
+    fontSize: 22,
     color: '#fff',
-    marginBottom: 10,
+    marginBottom: 20,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   card: {
     flexDirection: 'row',
@@ -98,14 +140,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 10,
-  },
-  valor: {
-    fontSize: 14,
-    color: '#1e90ff',
-    marginTop: 10,
+    marginRight: 15,
   },
   info: {
-    marginLeft: 15,
     flex: 1,
   },
   local: {
@@ -118,25 +155,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#bbb',
   },
-  jogadores: {
+  valor: {
+    fontSize: 14,
+    color: '#1e90ff',
+    marginTop: 5,
+  },
+  metodo: {
     fontSize: 14,
     color: '#bbb',
-    marginTop: 2,
+    marginTop: 5,
+  },
+  textoVazio: {
+    color: '#777',
+    textAlign: 'center',
+    marginTop: 20,
   },
   botao: {
-    backgroundColor: '#1e90ff',
-    padding: 8,
+    backgroundColor: '#007bff',
+    padding: 10,
     borderRadius: 5,
-    marginTop: 5,
+    marginTop: 10,
     alignItems: 'center',
-    width: 100,
     alignSelf: 'flex-end',
   },
   botaoTexto: {
     color: '#fff',
     fontWeight: 'bold',
-    textAlign: 'right',
   },
 });
 
 export default InscricoesScreen;
+
