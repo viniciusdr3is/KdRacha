@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { inscreverEmJogo } from '../../firebase/config';
 
@@ -29,6 +29,29 @@ const PagamentoScreen = ({ route }) => {
     }
   };
 
+  const ModernButton = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#28a745" />
+        </View>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        style={styles.modernButtonContainer}
+        onPress={handleConfirmarPagamento}
+        activeOpacity={0.8}
+      >
+        <View style={styles.modernButtonBackground}>
+          <Text style={styles.modernButtonText}>✨ Concluir Inscrição</Text>
+          <View style={styles.shine} />
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.titulo}>Escolha a Forma de Pagamento</Text>
@@ -55,15 +78,7 @@ const PagamentoScreen = ({ route }) => {
       </TouchableOpacity>
 
       <View style={styles.botaoContainer}>
-        {loading ? (
-          <ActivityIndicator size="large" color="#fff" />
-        ) : (
-          <Button
-            title="Concluir Inscrição"
-            onPress={handleConfirmarPagamento}
-            color="#28a745"
-          />
-        )}
+        <ModernButton />
       </View>
     </View>
   );
@@ -104,8 +119,54 @@ const styles = StyleSheet.create({
   botaoContainer: {
     marginTop: 40,
     width: '80%'
-  }
+  },
+  // Estilos do botão moderno
+  modernButtonContainer: {
+    borderRadius: 16,
+    elevation: 8,
+    shadowColor: '#28a745',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  modernButtonBackground: {
+    backgroundColor: '#28a745',
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    position: 'relative',
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#20c997',
+  },
+  modernButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  shine: {
+    position: 'absolute',
+    top: -20,
+    right: -30,
+    width: 60,
+    height: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 30,
+    transform: [{ rotate: '45deg' }],
+  },
+  loadingContainer: {
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 export default PagamentoScreen;
-
