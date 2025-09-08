@@ -28,7 +28,7 @@ const PerfilScreen = ({ navigation }) => {
         } catch (error) {
           console.error("Erro ao buscar dados do utilizador:", error);
         } finally {
-          setLoading(false); // Para o carregamento
+          setLoading(false);
         }
       } else {
         setLoading(false);

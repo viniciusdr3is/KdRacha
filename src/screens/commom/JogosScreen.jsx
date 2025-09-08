@@ -69,26 +69,23 @@ const JogosScreen = ({ route }) => {
   );
 
   const handleAbrirDetalhes = (jogo) => {
-    const dadosDoJogo = {
-      id: jogo.id,
-      criadorId: jogo.criadorId,
-      ...jogo.jogoData
-    };
+    const dadosDoJogo = jogo.jogoData 
+      ? { id: jogo.id, criadorId: jogo.criadorId, ...jogo.jogoData } 
+      : jogo;
     navigation.navigate('JogosDetalhes', { jogo: dadosDoJogo });
   };
 
   const handleRemoverJogo = (jogo) => {
     if (jogo.criadorId !== usuario?.uid) {
-      Alert.alert(
-        "Acesso Negado",
-        "Você não tem permissão para remover jogos que não criou."
-      );
+      Alert.alert("Acesso Negado", "Você não pode remover jogos que não criou.");
       return;
     }
+    
+    const dados = jogo.jogoData || jogo;
 
     Alert.alert(
       "Confirmar Exclusão",
-      `Tem a certeza de que deseja remover o jogo "${jogo.jogoData.nome || jogo.jogoData.local}"?`,
+      `Tem a certeza de que deseja remover o jogo "${dados.nome || dados.local}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         { 
@@ -108,46 +105,64 @@ const JogosScreen = ({ route }) => {
   };
 
   const renderItem = ({ item }) => {
+    const dados = item.jogoData ? item.jogoData : item;
     const isUserInscrito = inscritos.includes(item.id);
-    return (
-      <View style={styles.card}>
-        {item.jogoData.imagem ? (
-          <Image source={{ uri: item.jogoData.imagem }} style={styles.imagem} />
-        ) : (
-          <View style={[styles.imagem, { backgroundColor: '#333' }]} />
-        )}
-        <View style={styles.info}>
-          <Text style={styles.local}>{item.jogoData.nome || item.jogoData.local}</Text>
-          <Text style={styles.tipo}>{item.jogoData.tipo} ⚽ {item.jogoData.horario}</Text>
-          <Text style={styles.jogadores}>
-            Vagas restantes: {item.jogoData.vagas ?? '?'}
-          </Text>
-          <Text style={styles.valor}>
-            Valor: R$ {item.jogoData.valor}
-            {isUserInscrito && (
-              <Text style={styles.inscritoTexto}> ✅ Inscrito</Text>
-            )}
-          </Text>
-          
-          <View style={styles.botoesContainer}>
-            <TouchableOpacity
-              style={styles.botao}
-              onPress={() => handleAbrirDetalhes(item)}
-            >
-              <Text style={styles.botaoTexto}>🔍 Detalhes</Text>
-            </TouchableOpacity>
 
-            {dono && item.criadorId === usuario.uid && (
+    const jogadoresInscritos = dados.jogadores || 0;
+    const vagasRestantes = dados.vagas || 0;
+    const totalVagas = jogadoresInscritos + vagasRestantes;
+
+    return (
+      <TouchableOpacity style={styles.card} onPress={() => handleAbrirDetalhes(item)}>
+        {dados.imagem ? (
+          <Image source={{ uri: dados.imagem }} style={styles.imagem} />
+        ) : (
+          <View style={[styles.imagem, styles.imagemPlaceholder]} />
+        )}
+
+        <View style={styles.contentContainer}>
+          <Text style={styles.nomeJogo}>{dados.nome}</Text>
+          <Text style={styles.local}>📍 {dados.local}</Text>
+
+          <View style={styles.detailsRow}>
+            <Text style={styles.infoText}>🗓️ {dados.data} às {dados.horario}</Text>
+            <Text style={styles.infoText}>👥 {jogadoresInscritos} / {totalVagas} Jogadores</Text>
+          </View>
+
+          <View style={styles.footerRow}>
+            <Text style={styles.valor}>
+              R$ {dados.valor}
+              {isUserInscrito && (
+                <Text style={styles.inscritoTexto}> (Inscrito)</Text>
+              )}
+            </Text>
+            
+            <View style={styles.botoesContainer}>
               <TouchableOpacity
-                style={[styles.botao, styles.botaoRemover]}
-                onPress={() => handleRemoverJogo(item)}
+                style={[styles.botao, styles.botaoDetalhes]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleAbrirDetalhes(item);
+                }}
               >
-                <Text style={styles.botaoTexto}>🗑️ Remover</Text>
+                <Text style={styles.botaoTexto}>🔍</Text>
               </TouchableOpacity>
-            )}
+
+              {dono && item.criadorId === usuario.uid && (
+                <TouchableOpacity
+                  style={[styles.botao, styles.botaoRemover]}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleRemoverJogo(item);
+                  }}
+                >
+                  <Text style={styles.botaoTexto}>🗑️</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -197,7 +212,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
-    padding: 20,
+    paddingHorizontal: 10,
   },
   titulo: {
     fontSize: 22,
@@ -205,7 +220,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 60,
   },
   botaoAdicionar: {
     backgroundColor: '#1e90ff',
@@ -213,61 +228,82 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 20,
+    marginHorizontal: 10,
   },
   card: {
-    flexDirection: 'row',
     backgroundColor: '#222',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    alignItems: 'center',
+    borderRadius: 15,
+    marginBottom: 20,
+    overflow: 'hidden',
+    marginHorizontal: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
   },
   imagem: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-    marginRight: 15,
+    width: '100%',
+    height: 140,
   },
-  info: {
-    flex: 1,
+  imagemPlaceholder: {
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  local: {
-    fontSize: 16,
+  contentContainer: {
+    padding: 15,
+  },
+  nomeJogo: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 5,
+    marginBottom: 4,
   },
-  tipo: {
+  local: {
     fontSize: 14,
     color: '#bbb',
+    marginBottom: 12,
   },
-  jogadores: {
-    fontSize: 14,
-    color: '#bbb',
-    marginTop: 5,
+  detailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  infoText: {
+    fontSize: 13,
+    color: '#ddd',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+    paddingTop: 10,
   },
   valor: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#1e90ff',
     fontWeight: 'bold',
-    marginTop: 8,
   },
   inscritoTexto: {
-    color: '#28a745', 
+    color: '#28a745',
     fontWeight: 'bold',
+    fontSize: 14,
   },
   botoesContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
   },
   botao: {
-    backgroundColor: '#007bff',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 5,
+    borderRadius: 8,
     marginLeft: 10,
-    alignItems: 'center',
+  },
+  botaoDetalhes: {
+    backgroundColor: '#007bff',
   },
   botaoRemover: {
     backgroundColor: '#dc3545',
@@ -275,7 +311,7 @@ const styles = StyleSheet.create({
   botaoTexto: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 14,
   },
   toastContainer: {
     position: 'absolute',
@@ -291,7 +327,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   }
-});
+}); 
 
 export default JogosScreen;
 

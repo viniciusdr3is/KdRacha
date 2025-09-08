@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useContext } from 'react';
-import { View, Text, Image, StyleSheet, Button, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, Image, StyleSheet, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { 
   buscarInscricoesDoUsuario,
@@ -13,13 +13,68 @@ const JogoDetalhesScreen = ({ route }) => {
   const navigation = useNavigation();
   const jogoInicial = route?.params?.jogo;
 
+  const ModernButton = ({ title, onPress, color = "#1e90ff", disabled = false, loading = false }) => {
+    let backgroundColor = color;
+    let borderColor = color;
+    let textColor = '#FFFFFF';
+    let emoji = '';
+
+    if (color === '#28a745') {
+      borderColor = '#20c997';
+      emoji = '✅ ';
+    } else if (color === '#dc3545') {
+      borderColor = '#e74c3c';
+      emoji = '❌ ';
+    } else if (color === '#007bff') {
+      borderColor = '#0056b3';
+      emoji = '📊 ';
+    } else if (color === '#1e90ff') {
+      borderColor = '#4169e1';
+      emoji = '⚽ ';
+    }
+
+    if (disabled) {
+      backgroundColor = '#666';
+      borderColor = '#555';
+      textColor = '#999';
+    }
+
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={color} />
+        </View>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        style={[styles.modernButtonContainer, disabled && styles.disabledButton]}
+        onPress={onPress}
+        activeOpacity={disabled ? 1 : 0.8}
+        disabled={disabled}
+      >
+        <View style={[styles.modernButtonBackground, { backgroundColor, borderColor }]}>
+          <Text style={[styles.modernButtonText, { color: textColor }]}>
+            {emoji}{title}
+          </Text>
+          {!disabled && <View style={styles.shine} />}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   if (!jogoInicial) {
     return (
       <View style={styles.container}>
         <Text style={styles.titulo}>Erro ao Carregar</Text>
         <Text style={styles.texto}>Os detalhes do jogo não foram encontrados.</Text>
-        <View style={{marginTop: 20}}>
-          <Button title="Voltar" onPress={() => navigation.goBack()} color="#1e90ff" />
+        <View style={styles.botaoContainer}>
+          <ModernButton 
+            title="Voltar" 
+            onPress={() => navigation.goBack()} 
+            color="#1e90ff" 
+          />
         </View>
       </View>
     );
@@ -145,7 +200,7 @@ const JogoDetalhesScreen = ({ route }) => {
 
       {isDono ? (
         <View style={styles.botaoContainer}>
-          <Button
+          <ModernButton
             title="Ver Relatório de Inscritos"
             onPress={handleAbrirRelatorio}
             color="#007bff"
@@ -158,16 +213,18 @@ const JogoDetalhesScreen = ({ route }) => {
           </Text>
           <View style={styles.botaoContainer}>
             {actionLoading ? (
-              <ActivityIndicator size="large" color="#fff" />
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#fff" />
+              </View>
             ) : (
               inscrito ? (
-                <Button
+                <ModernButton
                   title="Cancelar Inscrição"
                   onPress={handleCancelarInscricao}
                   color="#dc3545"
                 />
               ) : (
-                <Button
+                <ModernButton
                   title="Inscrever-se"
                   onPress={handleInscricao}
                   color="#1e90ff"
@@ -228,8 +285,55 @@ const styles = StyleSheet.create({
     width: '80%',
     minHeight: 40,
     justifyContent: 'center'
-  }
+  },
+
+  modernButtonContainer: {
+    borderRadius: 16,
+    elevation: 8,
+    shadowColor: '#1e90ff',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  modernButtonBackground: {
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    position: 'relative',
+    overflow: 'hidden',
+    borderWidth: 2,
+  },
+  modernButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  shine: {
+    position: 'absolute',
+    top: -20,
+    right: -30,
+    width: 60,
+    height: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 30,
+    transform: [{ rotate: '45deg' }],
+  },
+  disabledButton: {
+    elevation: 2,
+    shadowOpacity: 0.1,
+  },
+  loadingContainer: {
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 export default JogoDetalhesScreen;
-
