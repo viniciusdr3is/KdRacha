@@ -17,11 +17,10 @@ export default function DonoQuadraNavigation() {
                 component={DonoCadastroNavigation} 
                 options={{ 
                     headerShown: false,
-                    title: 'Meus Jogos' // Texto que aparece na aba para o utilizador
+                    title: 'Meus Jogos'
                 }} 
             />
 
-            {/* A NOVA ABA DE HISTÓRICO */}
             <Tab.Screen 
                 name="Historico"
                 component={DonoHistoricoNavigation}
