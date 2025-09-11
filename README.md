@@ -11,6 +11,7 @@ KdRacha é um aplicativo mobile que facilita a procura e organização de jogos 
 
 - Cadastro e busca de quadras
 - Criação e participação em jogos amadores
+- Relatorios de participantes e pagamentos
 - Perfis para donos de quadra e jogadores
 
 ## Pré-requisitos
