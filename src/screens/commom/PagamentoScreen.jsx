@@ -4,13 +4,12 @@ import { useNavigation } from '@react-navigation/native';
 import { inscreverEmJogo } from '../../firebase/config';
 
 const PagamentoScreen = ({ route }) => {
-  const { jogoId, valor } = route.params; // Recebemos o ID e o valor
+  const { jogoId, valor } = route.params; 
   const navigation = useNavigation();
-  const [metodo, setMetodo] = useState(null); // Estado para guardar o método selecionado
+  const [metodo, setMetodo] = useState(null); 
   const [loading, setLoading] = useState(false);
 
   const handleConfirmarPagamento = async () => {
-    // 1. Verifica se um método foi selecionado
     if (!metodo) {
       Alert.alert("Atenção", "Por favor, selecione uma forma de pagamento.");
       return;
@@ -18,7 +17,6 @@ const PagamentoScreen = ({ route }) => {
 
     setLoading(true);
     try {
-      // 2. Chama a função de inscrição, passando o ID do jogo e o método
       await inscreverEmJogo(jogoId, metodo);
       
       Alert.alert('Inscrição realizada!', 'A sua inscrição foi confirmada com sucesso.');
@@ -36,7 +34,6 @@ const PagamentoScreen = ({ route }) => {
       <Text style={styles.titulo}>Escolha a Forma de Pagamento</Text>
       <Text style={styles.valorTexto}>Valor a pagar: R$ {valor}</Text>
 
-      {/* Opções de Pagamento */}
       <TouchableOpacity 
         style={[styles.botaoMetodo, metodo === 'pix' && styles.selecionado]} 
         onPress={() => setMetodo('pix')}

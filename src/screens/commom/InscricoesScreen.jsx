@@ -43,7 +43,7 @@ const InscricoesScreen = () => {
             setJogosInscritos(jogosFuturos);
           }
         } catch (error) {
-          console.error("Erro ao carregar jogos inscritos:", error);
+          console.error("Erro ao carregar jogos inscritos", error);
         } finally {
           if (isActive) {
             setLoading(false);

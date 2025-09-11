@@ -79,8 +79,7 @@ const JogoDetalhesScreen = ({ route }) => {
     }, [jogoInicial.id])
   );
 
-  // --- FUNÇÃO ALTERADA ---
-  // Agora, passamos também o valor do jogo para o ecrã de pagamento.
+
   const handleInscricao = () => {
     navigation.navigate('Pagamento', { 
       jogoId: jogoAtual.id,
@@ -183,7 +182,6 @@ const JogoDetalhesScreen = ({ route }) => {
   );
 };
 
-// ... (seus estilos permanecem os mesmos)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
