@@ -1,5 +1,6 @@
-<img width="339" height="765" alt="image" src="https://github.com/user-attachments/assets/55467346-793f-48b5-b562-56f89abe2bde" />
-
+<div align="center">
+  <img width="339" height="765" alt="image" src="https://github.com/user-attachments/assets/55467346-793f-48b5-b562-56f89abe2bde" />
+</div>
 
 
 # KdRacha
