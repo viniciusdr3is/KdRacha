@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator, SafeAreaView } fro
 import { buscarDetalhesInscritosPorJogo } from '../../firebase/config';
 
 const RelatorioJogoScreen = ({ route }) => {
-  const { jogo } = route.params; // Recebe os dados do jogo do ecrã anterior
+  const { jogo } = route.params;
   const [inscritos, setInscritos] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +49,7 @@ const RelatorioJogoScreen = ({ route }) => {
         <Text style={styles.sumarioTitulo}>Resumo Financeiro</Text>
         <Text style={styles.sumarioTexto}>Jogadores inscritos: {inscritos.length}</Text>
         <Text style={styles.sumarioTexto}>Valor por jogador: R$ {valorPorJogador.toFixed(2).replace('.', ',')}</Text>
-        <Text style={styles.totalArrecadado}>Total a Receber: R$ {totalArrecadado.toFixed(2).replace('.', ',')}</Text>
+        <Text style={styles.totalArrecadado}>Total Recebido: R$ {totalArrecadado.toFixed(2).replace('.', ',')}</Text>
       </View>
 
       <Text style={styles.listaTitulo}>Jogadores Inscritos</Text>
@@ -112,15 +112,10 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 10,
   },
-  jogadorNome: {
+  jogadorEmail: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
-  },
-  jogadorEmail: {
-    fontSize: 14,
-    color: '#aaa',
-    marginTop: 2,
   },
   jogadorPagamento: {
     fontSize: 14,

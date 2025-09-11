@@ -15,7 +15,11 @@ import { ouvirJogosEmTempoReal } from '../../data/jogos';
 import { AuthContext } from '../../context/AuthContext.jsx';
 
 const JogosScreen = ({ route }) => {
-  const [jogos, setJogos] = useState([]);
+  // Estado que guarda a lista COMPLETA de jogos futuros recebida do Firebase
+  const [todosOsJogosFuturos, setTodosOsJogosFuturos] = useState([]);
+  // NOVO ESTADO: Guarda apenas a lista de jogos que devem ser VISÍVEIS neste momento
+  const [jogosVisiveis, setJogosVisiveis] = useState([]);
+
   const [inscritos, setInscritos] = useState([]);
   const [toastMessage, setToastMessage] = useState('');
   const navigation = useNavigation();
@@ -23,23 +27,41 @@ const JogosScreen = ({ route }) => {
 
   const dono = usuario?.tipo === 'dono-quadra';
 
+  // Este useEffect busca os dados do Firebase
   useEffect(() => {
-    if (carregando) return;
-    if (!usuario) {
-      setJogos([]);
-      return;
-    }
+    if (carregando || !usuario) return;
 
     let unsubscribe;
     if (dono) {
-      unsubscribe = ouvirJogosEmTempoReal(setJogos, usuario.uid);
+      unsubscribe = ouvirJogosEmTempoReal(setTodosOsJogosFuturos, usuario.uid);
     } else {
-      unsubscribe = ouvirJogosEmTempoReal(setJogos);
+      unsubscribe = ouvirJogosEmTempoReal(setTodosOsJogosFuturos);
     }
 
     return () => unsubscribe();
   }, [usuario, carregando, dono]);
 
+  useEffect(() => {
+    // A cada minuto, esta função será executada
+    const intervalId = setInterval(() => {
+      const agora = new Date();
+      const jogosAindaValidos = todosOsJogosFuturos.filter(jogo => 
+        jogo.dataHoraJogo && jogo.dataHoraJogo.toDate() > agora
+      );
+      setJogosVisiveis(jogosAindaValidos);
+    }, 60000); // 60000 milissegundos = 1 minuto
+
+    return () => clearInterval(intervalId);
+  }, [todosOsJogosFuturos]); 
+
+  useEffect(() => {
+    const agora = new Date();
+    const jogosAindaValidos = todosOsJogosFuturos.filter(jogo => 
+      jogo.dataHoraJogo && jogo.dataHoraJogo.toDate() > agora
+    );
+    setJogosVisiveis(jogosAindaValidos);
+  }, [todosOsJogosFuturos]);
+  
 
   useEffect(() => {
     if (route.params?.toastMessage) {
@@ -80,9 +102,7 @@ const JogosScreen = ({ route }) => {
       Alert.alert("Acesso Negado", "Você não pode remover jogos que não criou.");
       return;
     }
-    
     const dados = jogo.jogoData || jogo;
-
     Alert.alert(
       "Confirmar Exclusão",
       `Tem a certeza de que deseja remover o jogo "${dados.nome || dados.local}"?`,
@@ -108,10 +128,6 @@ const JogosScreen = ({ route }) => {
     const dados = item.jogoData ? item.jogoData : item;
     const isUserInscrito = inscritos.includes(item.id);
 
-    const jogadoresInscritos = dados.jogadores || 0;
-    const vagasRestantes = dados.vagas || 0;
-    const totalVagas = jogadoresInscritos + vagasRestantes;
-
     return (
       <TouchableOpacity style={styles.card} onPress={() => handleAbrirDetalhes(item)}>
         {dados.imagem ? (
@@ -119,16 +135,13 @@ const JogosScreen = ({ route }) => {
         ) : (
           <View style={[styles.imagem, styles.imagemPlaceholder]} />
         )}
-
         <View style={styles.contentContainer}>
           <Text style={styles.nomeJogo}>{dados.nome}</Text>
           <Text style={styles.local}>📍 {dados.local}</Text>
-
           <View style={styles.detailsRow}>
             <Text style={styles.infoText}>🗓️ {dados.data} às {dados.horario}</Text>
-            <Text style={styles.infoText}>👥 {jogadoresInscritos} / {totalVagas} Jogadores</Text>
+            <Text style={styles.infoText}>👥 Vagas: {dados.vagas ?? '?'}</Text>
           </View>
-
           <View style={styles.footerRow}>
             <Text style={styles.valor}>
               R$ {dados.valor}
@@ -136,7 +149,6 @@ const JogosScreen = ({ route }) => {
                 <Text style={styles.inscritoTexto}> (Inscrito)</Text>
               )}
             </Text>
-            
             <View style={styles.botoesContainer}>
               <TouchableOpacity
                 style={[styles.botao, styles.botaoDetalhes]}
@@ -147,7 +159,6 @@ const JogosScreen = ({ route }) => {
               >
                 <Text style={styles.botaoTexto}>🔍</Text>
               </TouchableOpacity>
-
               {dono && item.criadorId === usuario.uid && (
                 <TouchableOpacity
                   style={[styles.botao, styles.botaoRemover]}
@@ -189,7 +200,8 @@ const JogosScreen = ({ route }) => {
           </TouchableOpacity>
         )}
         <FlatList
-          data={jogos}
+          // A FlatList agora usa a lista de jogos visíveis, que é atualizada dinamicamente
+          data={jogosVisiveis}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           ListEmptyComponent={<Text style={{ color: '#777', textAlign: 'center' }}>
@@ -290,7 +302,7 @@ const styles = StyleSheet.create({
   },
   inscritoTexto: {
     color: '#28a745',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     fontSize: 14,
   },
   botoesContainer: {
@@ -327,7 +339,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   }
-}); 
+});
 
 export default JogosScreen;
 

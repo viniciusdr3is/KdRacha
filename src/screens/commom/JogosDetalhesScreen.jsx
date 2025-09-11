@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useContext } from 'react';
-import { View, Text, Image, StyleSheet, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, Button, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { 
   buscarInscricoesDoUsuario,
@@ -13,68 +13,13 @@ const JogoDetalhesScreen = ({ route }) => {
   const navigation = useNavigation();
   const jogoInicial = route?.params?.jogo;
 
-  const ModernButton = ({ title, onPress, color = "#1e90ff", disabled = false, loading = false }) => {
-    let backgroundColor = color;
-    let borderColor = color;
-    let textColor = '#FFFFFF';
-    let emoji = '';
-
-    if (color === '#28a745') {
-      borderColor = '#20c997';
-      emoji = '✅ ';
-    } else if (color === '#dc3545') {
-      borderColor = '#e74c3c';
-      emoji = '❌ ';
-    } else if (color === '#007bff') {
-      borderColor = '#0056b3';
-      emoji = '📊 ';
-    } else if (color === '#1e90ff') {
-      borderColor = '#4169e1';
-      emoji = '⚽ ';
-    }
-
-    if (disabled) {
-      backgroundColor = '#666';
-      borderColor = '#555';
-      textColor = '#999';
-    }
-
-    if (loading) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={color} />
-        </View>
-      );
-    }
-
-    return (
-      <TouchableOpacity
-        style={[styles.modernButtonContainer, disabled && styles.disabledButton]}
-        onPress={onPress}
-        activeOpacity={disabled ? 1 : 0.8}
-        disabled={disabled}
-      >
-        <View style={[styles.modernButtonBackground, { backgroundColor, borderColor }]}>
-          <Text style={[styles.modernButtonText, { color: textColor }]}>
-            {emoji}{title}
-          </Text>
-          {!disabled && <View style={styles.shine} />}
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
   if (!jogoInicial) {
     return (
       <View style={styles.container}>
         <Text style={styles.titulo}>Erro ao Carregar</Text>
         <Text style={styles.texto}>Os detalhes do jogo não foram encontrados.</Text>
-        <View style={styles.botaoContainer}>
-          <ModernButton 
-            title="Voltar" 
-            onPress={() => navigation.goBack()} 
-            color="#1e90ff" 
-          />
+        <View style={{marginTop: 20}}>
+          <Button title="Voltar" onPress={() => navigation.goBack()} color="#1e90ff" />
         </View>
       </View>
     );
@@ -116,16 +61,12 @@ const JogoDetalhesScreen = ({ route }) => {
       const unsubscribe = onSnapshot(jogoRef, (doc) => {
         if (doc.exists()) {
           const dataFromDb = doc.data();
-          if (dataFromDb.jogoData) {
-            const flattenedData = {
-              id: doc.id,
-              criadorId: dataFromDb.criadorId,
-              ...dataFromDb.jogoData,
-            };
-            setJogoAtual(flattenedData);
-          } else {
-            setJogoAtual({ id: doc.id, ...dataFromDb });
-          }
+          const flattenedData = {
+            id: doc.id,
+            criadorId: dataFromDb.criadorId,
+            ...(dataFromDb.jogoData || dataFromDb),
+          };
+          setJogoAtual(flattenedData);
         } else {
           console.error("Jogo não encontrado!");
           navigation.goBack();
@@ -138,8 +79,13 @@ const JogoDetalhesScreen = ({ route }) => {
     }, [jogoInicial.id])
   );
 
+  // --- FUNÇÃO ALTERADA ---
+  // Agora, passamos também o valor do jogo para o ecrã de pagamento.
   const handleInscricao = () => {
-    navigation.navigate('Pagamento', { jogoId: jogoAtual.id });
+    navigation.navigate('Pagamento', { 
+      jogoId: jogoAtual.id,
+      valor: jogoAtual.valor 
+    });
   };
 
   const handleCancelarInscricao = () => {
@@ -175,6 +121,10 @@ const JogoDetalhesScreen = ({ route }) => {
   if (loading) {
     return <View style={styles.container}><ActivityIndicator size="large" color="#fff" /></View>;
   }
+  
+  const jogadoresInscritos = jogoAtual.jogadores || 0;
+  const vagasRestantes = jogoAtual.vagas || 0;
+  const totalVagas = jogadoresInscritos + vagasRestantes;
 
   return (
     <View style={styles.container}>
@@ -187,7 +137,7 @@ const JogoDetalhesScreen = ({ route }) => {
       <Text style={styles.texto}>Local: {jogoAtual.local}</Text>
       <Text style={styles.texto}>Tipo: {jogoAtual.tipo}</Text>
       <Text style={styles.texto}>Horário: {jogoAtual.horario}</Text>
-      <Text style={styles.texto}>Jogadores: {jogoAtual.jogadores} / Vagas: {jogoAtual.vagas}</Text>
+      <Text style={styles.texto}>Inscritos: {jogadoresInscritos} / {totalVagas}</Text>
       
       {inscrito && dadosInscricao && !isDono && (
         <View style={styles.dadosPagamentoContainer}>
@@ -199,13 +149,9 @@ const JogoDetalhesScreen = ({ route }) => {
       )}
 
       {isDono ? (
-        <View style={styles.botaoContainer}>
-          <ModernButton
-            title="Ver Relatório de Inscritos"
-            onPress={handleAbrirRelatorio}
-            color="#007bff"
-          />
-        </View>
+        <TouchableOpacity style={styles.relatorioButton} onPress={handleAbrirRelatorio}>
+          <Text style={styles.relatorioButtonText}>📊 Ver Relatório de Inscritos</Text>
+        </TouchableOpacity>
       ) : (
         <>
           <Text style={[styles.status, { color: inscrito ? '#28a745' : '#ffc107' }]}>
@@ -213,22 +159,20 @@ const JogoDetalhesScreen = ({ route }) => {
           </Text>
           <View style={styles.botaoContainer}>
             {actionLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#fff" />
-              </View>
+              <ActivityIndicator size="large" color="#fff" />
             ) : (
               inscrito ? (
-                <ModernButton
+                <Button
                   title="Cancelar Inscrição"
                   onPress={handleCancelarInscricao}
                   color="#dc3545"
                 />
               ) : (
-                <ModernButton
+                <Button
                   title="Inscrever-se"
                   onPress={handleInscricao}
                   color="#1e90ff"
-                  disabled={jogoAtual.vagas <= 0}
+                  disabled={vagasRestantes <= 0}
                 />
               )
             )}
@@ -239,6 +183,7 @@ const JogoDetalhesScreen = ({ route }) => {
   );
 };
 
+// ... (seus estilos permanecem os mesmos)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -286,54 +231,27 @@ const styles = StyleSheet.create({
     minHeight: 40,
     justifyContent: 'center'
   },
-
-  modernButtonContainer: {
-    borderRadius: 16,
-    elevation: 8,
-    shadowColor: '#1e90ff',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  modernButtonBackground: {
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    position: 'relative',
-    overflow: 'hidden',
-    borderWidth: 2,
-  },
-  modernButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  shine: {
-    position: 'absolute',
-    top: -20,
-    right: -30,
-    width: 60,
-    height: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 30,
-    transform: [{ rotate: '45deg' }],
-  },
-  disabledButton: {
-    elevation: 2,
-    shadowOpacity: 0.1,
-  },
-  loadingContainer: {
-    paddingVertical: 18,
+  relatorioButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginTop: 30,
+    width: '90%',
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
+  relatorioButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  }
 });
 
 export default JogoDetalhesScreen;
