@@ -1,3 +1,7 @@
+<img width="339" height="765" alt="image" src="https://github.com/user-attachments/assets/55467346-793f-48b5-b562-56f89abe2bde" />
+
+
+
 # KdRacha
 
 KdRacha é um aplicativo mobile que facilita a procura e organização de jogos amadores. O app possui dois tipos de usuários: **dono de quadra** e **jogador**.
