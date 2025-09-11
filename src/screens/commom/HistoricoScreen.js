@@ -23,16 +23,14 @@ const HistoricoScreen = () => {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
               const data = docSnap.data();
-              // Verifica se os dados estão aninhados dentro de 'jogoData'
               if (data.jogoData) {
                 return { 
                   id: docSnap.id, 
                   criadorId: data.criadorId,
-                  ...data.jogoData, //Spread operator para espalhar os dados aninhados
+                  ...data.jogoData, 
                   inscricaoInfo: inscricao 
                 };
               } else {
-                // Se não (dados antigos), usamos a estrutura normal "achatada"
                 return { 
                   id: docSnap.id, 
                   ...data,

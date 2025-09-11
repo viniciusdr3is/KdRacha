@@ -3,7 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import CadastrarJogoScreen from '../screens/dono/CadastrarJogoScreen';
 import JogosScreen from '../screens/commom/JogosScreen';
 import JogosDetalhesScreen from '../screens/commom/JogosDetalhesScreen';
-import RelatorioJogoScreen from '../screens/dono/RelatorioDonoScreen';
+import RelatorioJogoScreen from '../screens/dono/RelatorioJogoScreen';
 
 const Stack = createStackNavigator();
 
@@ -32,7 +32,6 @@ export default function DonoCadastroNavigation() {
                 component={CadastrarJogoScreen}
                 options={{ title: 'Cadastrar Novo Jogo' }}
             />
-            {/* 2. ADICIONAR A NOVA ROTA AQUI */}
             <Stack.Screen
                 name="RelatorioJogo"
                 component={RelatorioJogoScreen}

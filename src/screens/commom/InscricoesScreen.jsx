@@ -24,17 +24,9 @@ const InscricoesScreen = () => {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
               const data = docSnap.data();
-              // Verifica se os dados estão aninhados dentro de 'jogoData'
               if (data.jogoData) {
-                // Se sim, "achatamos" a estrutura para que o resto do ecrã funcione
-                return {
-                  id: docSnap.id,
-                  criadorId: data.criadorId,
-                  ...data.jogoData, // Usamos o spread operator para espalhar os dados aninhados
-                  inscricaoInfo: inscricao
-                };
+                return { id: docSnap.id, criadorId: data.criadorId, ...data.jogoData, inscricaoInfo: inscricao };
               } else {
-                // Se não (dados antigos), usamos a estrutura normal "achatada"
                 return { ...data, id: docSnap.id, inscricaoInfo: inscricao };
               }
             }
@@ -42,9 +34,13 @@ const InscricoesScreen = () => {
           });
 
           const jogos = (await Promise.all(jogosPromises)).filter(j => j !== null);
+          const agora = new Date();
+          const jogosFuturos = jogos.filter(jogo => {
+            return jogo.dataHoraJogo && jogo.dataHoraJogo.toDate() >= agora;
+          });
 
           if (isActive) {
-            setJogosInscritos(jogos);
+            setJogosInscritos(jogosFuturos);
           }
         } catch (error) {
           console.error("Erro ao carregar jogos inscritos:", error);
@@ -103,12 +99,12 @@ const InscricoesScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Minhas Inscrições</Text>
+      <Text style={styles.titulo}>Minhas Inscrições Ativas</Text>
       <FlatList
         data={jogosInscritos}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.textoVazio}>Nenhuma inscrição encontrada.</Text>}
+        ListEmptyComponent={<Text style={styles.textoVazio}>Nenhuma inscrição ativa encontrada.</Text>}
       />
     </View>
   );
