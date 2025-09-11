@@ -7,8 +7,7 @@ const functions = require("firebase-functions");
 
 // A sua chave secreta do Stripe
 const stripeSecretKey =
-  "sk_test_51S5TkQF2TTQzZJeBuRFmsuNEy9wqLakevZyExVrOpLjksFzNOh349Gd" +
-  "ch8oXmF8SYxwKF2158aGGtDkWmoktvWVV00CQQTZ9Pd";
+  "secret-key-HERE";
 const stripe = require("stripe")(stripeSecretKey);
 
 /**
