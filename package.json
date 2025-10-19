@@ -21,6 +21,7 @@
     "@stripe/stripe-react-native": "0.38.6",
     "axios": "^1.9.0",
     "expo": "~52.0.47",
+    "expo-image-picker": "~16.0.6",
     "expo-status-bar": "~2.0.1",
     "firebase": "^11.6.1",
     "firebase-functions": "^6.4.0",

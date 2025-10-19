@@ -22,6 +22,7 @@ import {
   serverTimestamp,
   writeBatch,
 } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: "AIzaSyC7BKOtmhMDNxm_Gvrf9Wce7_yvYW-Lli4",
@@ -50,6 +51,7 @@ const auth = (() => {
 })();
 
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 const cadastrarJogo = async (jogoData) => {
   const userId = auth.currentUser?.uid;
