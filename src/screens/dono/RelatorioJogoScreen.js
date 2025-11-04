@@ -31,20 +31,20 @@ const RelatorioJogoScreen = ({ route }) => {
       let docs = [];
 
       // 1) quando salvaram como "/jogos/<id>"
-      const q1 = query(collection(db, 'avaliacoes'), where('jogoId', '==', /jogos/${jogo.id}));
+      const q1 = query(collection(db, 'avaliacoes'), where('jogoId', '==', `jogos/${jogo.id}`));
       const s1 = await getDocs(q1);
       docs = s1.docs.map(d => ({ id: d.id, ...d.data() }));
 
       // 2) quando salvaram como "<id>"
       if (docs.length === 0) {
-        const q2 = query(collection(db, 'avaliacoes'), where('jogoId', '==', ${jogo.id}));
+        const q2 = query(collection(db, 'avaliacoes'), where('jogoId', '==', jogo.id));
         const s2 = await getDocs(q2);
         docs = s2.docs.map(d => ({ id: d.id, ...d.data() }));
       }
 
       // 3) opcional: caso normalize depois para jogoIdNorm
       if (docs.length === 0) {
-        const q3 = query(collection(db, 'avaliacoes'), where('jogoIdNorm', '==', ${jogo.id}));
+        const q3 = query(collection(db, 'avaliacoes'), where('jogoIdNorm', '==', jogo.id));
         const s3 = await getDocs(q3);
         docs = s3.docs.map(d => ({ id: d.id, ...d.data() }));
       }
