@@ -195,6 +195,147 @@ const buscarDetalhesInscritosPorJogo = async (jogoId) => {
   return detalhesCompletos;
 };
 
+// helpers para aceitar tanto "abc" quanto "/jogos/abc" e "/usuarios/uid"
+const toPossibleJogoKeys = (jogoId) => [ `${jogoId}`, `/jogos/${jogoId}` ];
+const toPossibleUserKeys = (uid) =>  [ `${uid}`, `/usuarios/${uid}` ];
+
+/** Lê avaliação do jogador logado para um jogo */
+const buscarAvaliacaoDoJogoCompat = async ({ jogoId }) => {
+  const jogadorId = auth.currentUser?.uid;
+  if (!jogadorId) return null;
+
+  try {
+    const jogoKeys = toPossibleJogoKeys(jogoId);
+    const userKeys = toPossibleUserKeys(jogadorId);
+
+    for (const jk of jogoKeys) {
+      for (const uk of userKeys) {
+        // 1) padrão criado manualmente: usuarioId + jogoId
+        const q1 = query(
+          collection(db, 'avaliacoes'),
+          where('jogoId', '==', jk),
+          where('usuarioId', '==', uk)
+        );
+        const s1 = await getDocs(q1);
+        if (!s1.empty) return { id: s1.docs[0].id, ...s1.docs[0].data() };
+
+        // 2) fallback se alguém salvar como "avaliadorId"
+        const q2 = query(
+          collection(db, 'avaliacoes'),
+          where('jogoId', '==', jk),
+          where('avaliadorId', '==', uk)
+        );
+        const s2 = await getDocs(q2);
+        if (!s2.empty) return { id: s2.docs[0].id, ...s2.docs[0].data() };
+      }
+    }
+    return null;
+  } catch (e) {
+    if (e.code === 'permission-denied') return null;
+    throw e;
+  }
+};
+
+/** Salva avaliação no formato atual */
+const salvarAvaliacaoCompat = async ({ jogoId, avaliadoId, nota, comentario }) => {
+  const jogadorId = auth.currentUser?.uid;
+  if (!jogadorId) throw new Error('Usuário não autenticado');
+
+  const existente = await buscarAvaliacaoDoJogoCompat({ jogoId });
+  if (existente) return existente;
+
+ const payload = {
+    // compat com o que foi criado manualmente
+    avaliacaoId: String(Date.now()),
+    usuarioId: `/usuarios/${jogadorId}`,
+    jogoId: `/jogos/${jogoId}`,
+    nota: Number(nota),
+    comentario: comentario ?? null,
+    dataCriacao: serverTimestamp(),
+
+    avaliadorId: jogadorId,
+    avaliadoId: avaliadoId ?? null,
+    jogoIdNorm: jogoId,
+  };
+
+  const ref = await addDoc(collection(db, 'avaliacoes'), payload);
+  const snap = await getDoc(ref);
+  return { id: ref.id, ...snap.data() };
+};
+
+// id determinístico: <criadorId><jogadorId><jogoId>
+
+const makeAvaliacaoId = (criadorId, jogadorId, jogoId) =>
+  `${criadorId}_${jogadorId}_${jogoId}`;
+
+const criarAvaliacao = async ({ jogoId, criadorId, vrNota, dsComentario }) => {
+  const jogadorId = auth.currentUser?.uid;
+  if (!jogadorId) throw new Error('Usuário não autenticado');
+
+  const inscRef = doc(db, 'inscricoes', `${jogadorId}_${jogoId}`);
+  const inscSnap = await getDoc(inscRef);
+  if (!inscSnap.exists()) throw new Error('Você não possui inscrição neste jogo.');
+
+  const avaliacaoId = makeAvaliacaoId(criadorId, jogadorId, jogoId);
+  const ref = doc(db, 'avaliacoes', avaliacaoId);
+
+  const ja = await getDoc(ref);
+  if (ja.exists()) throw new Error('Você já avaliou este jogo.');
+
+  await setDoc(ref, {
+    criadorId,
+    jogadorId,
+    jogoId,
+    vrNota: Number(vrNota),
+    dsComentario: dsComentario ?? null,
+    dtCriacao: serverTimestamp(),
+  });
+};
+
+const buscarAvaliacaoDoJogo = async ({ jogoId, criadorId }) => {
+  const jogadorId = auth.currentUser?.uid;
+  if (!jogadorId) return null;
+  try {
+    const ref = doc(db, 'avaliacoes', makeAvaliacaoId(criadorId, jogadorId, jogoId));
+    const snap = await getDoc(ref);
+    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  } catch (e) {
+    if (e.code === 'permission-denied') return null;
+    throw e;
+  }
+};
+
+// --------------------- Util de debug ---------------------
+
+export async function testarPermissoesFirebase() {
+  const user = auth.currentUser;
+  console.log("👤 Usuário atual:", user?.uid || "não logado");
+
+  try {
+    console.log("🔹 Testando leitura de jogos...");
+    await getDoc(doc(db, "jogos", "teste"));
+    console.log("Leitura de jogos OK!");
+  } catch (e) {
+    console.warn("Falha ao ler jogos:", e.code);
+  }
+
+  try {
+    console.log("🔹 Testando leitura de inscricoes...");
+    await getDoc(doc(db, "inscricoes", "teste"));
+    console.log("Leitura de inscricoes OK!");
+  } catch (e) {
+    console.warn("Falha ao ler inscricoes:", e.code);
+  }
+
+  try {
+    console.log("🔹 Testando leitura de avaliacoes...");
+    await getDoc(doc(db, "avaliacoes", "teste"));
+    console.log("Leitura de avaliacoes OK!");
+  } catch (e) {
+    console.warn("Falha ao ler avaliacoes:", e.code);
+  }
+}
+
 export {
   auth,
   db,
@@ -205,5 +346,11 @@ export {
   buscarInscricoesDoUsuario,
   removerJogo,
   buscarDetalhesInscritosPorJogo,
+
+  salvarAvaliacaoCompat,
+  buscarAvaliacaoDoJogoCompat,
+
+  criarAvaliacao,
+  buscarAvaliacaoDoJogo,
 };
 
