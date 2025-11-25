@@ -67,25 +67,48 @@ const selecionarImagem = async () => {
 
   const handleCadastrar = async () => {
     if (!nome || !local || !data || !horario || !vagas || !valor || !tipo) {
-      Alert.alert(
-        "Atenção",
-        "Por favor, preencha todos os campos obrigatórios."
-      );
+      Alert.alert("Atenção", "Por favor, preencha todos os campos obrigatórios.");
       return;
     }
     setLoading(true);
 
     try {
       let imageUrl = "";
+
       if (imagem) {
-        const response = await fetch(imagem);
-        const blob = await response.blob();
+        const uriToBlob = (uri) => {
+          return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.onload = function () {
+              // Retorna o blob
+              resolve(xhr.response);
+            };
+            xhr.onerror = function (e) {
+              console.log(e);
+              reject(new TypeError("Falha na conversão da imagem"));
+            };
+            xhr.responseType = "blob";
+            xhr.open("GET", uri, true);
+            xhr.send(null);
+          });
+        };
+
+        console.log("Convertendo imagem para Blob...");
+        const blob = await uriToBlob(imagem);
+        console.log("Blob criado com sucesso. Tamanho:", blob.size);
 
         const nomeArquivo = `jogo_${Date.now()}.jpg`;
         const imageRef = ref(storage, `games/${nomeArquivo}`);
 
-        await uploadBytes(imageRef, blob);
+        const metadata = { contentType: 'image/jpeg' };
+
+        console.log("Iniciando upload...");
+        await uploadBytes(imageRef, blob, metadata);
+        console.log("Upload concluído!");
+
         imageUrl = await getDownloadURL(imageRef);
+        
+        // blob.close(); 
       }
 
       const partesData = data.split("/");
@@ -197,7 +220,7 @@ const selecionarImagem = async () => {
         multiline={true}
         numberOfLines={3}
       />
-      {/* Botão para selecionar a imagem */}
+      {/* btn para selecionar a imagem */}
       <TouchableOpacity style={styles.botaoImagem} onPress={selecionarImagem}>
         <Text style={styles.botaoTexto}>Selecionar Imagem</Text>
       </TouchableOpacity>

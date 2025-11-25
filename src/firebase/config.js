@@ -28,7 +28,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyC7BKOtmhMDNxm_Gvrf9Wce7_yvYW-Lli4",
   authDomain: "kd-racha-9330d.firebaseapp.com",
   projectId: "kd-racha-9330d",
-  storageBucket: "kd-racha-9330d.appspot.com",
+  storageBucket: "kd-racha-9330d.firebasestorage.app",
   messagingSenderId: "55252454477",
   appId: "1:55252454477:web:5f1a66d5a759835b036004",
   measurementId: "G-DXJBMLVS0Z"
@@ -141,8 +141,6 @@ const cancelarInscricao = async (jogoId) => {
   });
 };
 
-
-// As outras funções permanecem corretas
 const buscarInscricoesDoUsuario = async () => {
   const userId = auth.currentUser?.uid;
   if (!userId) return []; 
@@ -195,11 +193,9 @@ const buscarDetalhesInscritosPorJogo = async (jogoId) => {
   return detalhesCompletos;
 };
 
-// helpers para aceitar tanto "abc" quanto "/jogos/abc" e "/usuarios/uid"
 const toPossibleJogoKeys = (jogoId) => [ `${jogoId}`, `/jogos/${jogoId}` ];
 const toPossibleUserKeys = (uid) =>  [ `${uid}`, `/usuarios/${uid}` ];
 
-/** Lê avaliação do jogador logado para um jogo */
 const buscarAvaliacaoDoJogoCompat = async ({ jogoId }) => {
   const jogadorId = auth.currentUser?.uid;
   if (!jogadorId) return null;
@@ -210,7 +206,6 @@ const buscarAvaliacaoDoJogoCompat = async ({ jogoId }) => {
 
     for (const jk of jogoKeys) {
       for (const uk of userKeys) {
-        // 1) padrão criado manualmente: usuarioId + jogoId
         const q1 = query(
           collection(db, 'avaliacoes'),
           where('jogoId', '==', jk),
@@ -219,7 +214,6 @@ const buscarAvaliacaoDoJogoCompat = async ({ jogoId }) => {
         const s1 = await getDocs(q1);
         if (!s1.empty) return { id: s1.docs[0].id, ...s1.docs[0].data() };
 
-        // 2) fallback se alguém salvar como "avaliadorId"
         const q2 = query(
           collection(db, 'avaliacoes'),
           where('jogoId', '==', jk),
@@ -236,7 +230,6 @@ const buscarAvaliacaoDoJogoCompat = async ({ jogoId }) => {
   }
 };
 
-/** Salva avaliação no formato atual */
 const salvarAvaliacaoCompat = async ({ jogoId, avaliadoId, nota, comentario }) => {
   const jogadorId = auth.currentUser?.uid;
   if (!jogadorId) throw new Error('Usuário não autenticado');
@@ -245,7 +238,6 @@ const salvarAvaliacaoCompat = async ({ jogoId, avaliadoId, nota, comentario }) =
   if (existente) return existente;
 
  const payload = {
-    // compat com o que foi criado manualmente
     avaliacaoId: String(Date.now()),
     usuarioId: `/usuarios/${jogadorId}`,
     jogoId: `/jogos/${jogoId}`,
@@ -305,7 +297,6 @@ const buscarAvaliacaoDoJogo = async ({ jogoId, criadorId }) => {
   }
 };
 
-// --------------------- Util de debug ---------------------
 
 export async function testarPermissoesFirebase() {
   const user = auth.currentUser;
@@ -336,9 +327,11 @@ export async function testarPermissoesFirebase() {
   }
 }
 
+
 export {
   auth,
   db,
+  storage,
   createUserWithEmailAndPassword,
   cadastrarJogo,
   inscreverEmJogo,
