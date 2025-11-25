@@ -35,7 +35,3 @@ KdRacha é um aplicativo mobile que facilita a procura e organização de jogos 
     ```
 
 O app estará disponível em `localhost`.
-
-## Licença
-
-Este projeto está sob a licença MIT.
