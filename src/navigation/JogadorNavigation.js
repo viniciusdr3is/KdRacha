@@ -5,6 +5,7 @@ import PerfilScreen from '../screens/auth/PerfilScreen';
 import InscricoesScreen from '../screens/commom/InscricoesScreen';
 import PagamentoScreen from '../screens/commom/PagamentoScreen';
 import HistoricoScreen from '../screens/commom/HistoricoScreen'; 
+import ChatScreen from '../screens/commom/ChatScreen';
 
 
 

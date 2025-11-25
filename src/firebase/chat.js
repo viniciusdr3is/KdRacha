@@ -1,4 +1,3 @@
-// src/firebase/chat.js
 import { db } from './config';
 import {
   collection,
@@ -15,56 +14,65 @@ import {
 } from 'firebase/firestore';
 
 /**
- * Garante que exista um documento em chats/{jogoId}
- * @param {string} jogoId
- * @param {object} jogoData opcional: titulo, criadorId etc.
+ * Garante que exista um documento na coleção 'chats' para este jogo.
+ * Se não existir, cria um.
  */
 export const criarChatSeNaoExiste = async (jogoId, jogoData = {}) => {
   if (!jogoId) return null;
   const chatRef = doc(db, 'chats', jogoId);
-  const snap = await getDoc(chatRef);
-  if (!snap.exists()) {
-    await setDoc(chatRef, {
-      jogoId,
-      titulo: jogoData.titulo || jogoData.nome || 'Chat do jogo',
-      criadoEm: serverTimestamp(),
-      ultimaMensagem: null,
-      ultimaAtualizacao: serverTimestamp(),
-      criadorId: jogoData.criadorId || null,
-    });
-  }
+  
+  // Usamos setDoc com merge: true. Se existir, não faz nada (ou atualiza campos novos).
+  // Se não existir, cria o documento.
+  await setDoc(chatRef, {
+    jogoId,
+    titulo: jogoData.titulo || jogoData.nome || 'Chat do jogo',
+    ultimaAtualizacao: serverTimestamp(),
+    criadorId: jogoData.criadorId || null,
+  }, { merge: true });
+  
   return chatRef.id;
 };
 
 /**
- * Observador em tempo real para mensagens de um chat (ordenadas do mais antigo para o mais novo)
- * callback recebe array de mensagens [{ id, text, senderId, senderName, createdAt }]
- * Retorna função unsubscribe.
+ * Observador em tempo real para mensagens de um chat.
+ * ORDENAÇÃO: 'asc' (Ascendente) -> Mais antigas primeiro, mais novas no fim.
  */
 export const ouvirMensagens = (jogoId, callback) => {
   const msgsRef = collection(db, 'chats', jogoId, 'messages');
+  
+  // Ordenamos por data de criação ascendente para que a lista vá descendo
   const q = query(msgsRef, orderBy('createdAt', 'asc'));
+  
   const unsub = onSnapshot(q, (snapshot) => {
-    const msgs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const msgs = snapshot.docs.map(d => {
+        const data = d.data();
+        // Converte o Timestamp do Firestore para um objeto Date do JS para evitar erros na UI
+        const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();
+        return { id: d.id, ...data, createdAt };
+    });
     callback(msgs);
   });
   return unsub;
 };
 
 /**
- * Envia uma mensagem para chats/{jogoId}/messages
+ * Envia uma mensagem para a subcoleção 'messages' do chat.
  */
 export const enviarMensagem = async (jogoId, text, user) => {
   if (!jogoId || !text || !user) return;
+  
   const msgsRef = collection(db, 'chats', jogoId, 'messages');
+  
+  // Adiciona a mensagem
   await addDoc(msgsRef, {
     text,
     senderId: user.uid,
-    senderName: user.displayName || user.email || 'Usuário',
+    // Tenta usar o nome, se não tiver, usa o email ou um fallback
+    senderName: user.nome || user.email || 'Utilizador', 
     createdAt: serverTimestamp(),
   });
 
-  // Atualiza meta do chat
+  // Atualiza os metadados do chat (última mensagem e hora) para facilitar listagens futuras
   const chatRef = doc(db, 'chats', jogoId);
   await setDoc(chatRef, {
     ultimaMensagem: text,
@@ -73,17 +81,22 @@ export const enviarMensagem = async (jogoId, text, user) => {
 };
 
 /**
- * Verifica se o usuário (uid) pode participar do chat do jogo:
- * - se for o criador do jogo (criadorId)
- * - ou se houver inscrição em 'inscricoes' com jogoId + usuarioId
- * Retorna boolean.
+ * Verifica se o utilizador tem permissão para entrar no chat.
+ * Retorna true se for o dono OU se estiver inscrito no jogo.
  */
 export const verificarUsuarioNoJogo = async (jogoId, uid, criadorId = null) => {
   if (!uid || !jogoId) return false;
+  
+  // 1. Se for o dono do jogo, tem acesso liberado
   if (criadorId && uid === criadorId) return true;
 
+  // 2. Se não for dono, verifica se existe uma inscrição ativa
   const inscricoesRef = collection(db, 'inscricoes');
-  const q = query(inscricoesRef, where('jogoId', '==', jogoId), where('usuarioId', '==', uid));
+  
+  // Busca na coleção 'inscricoes' onde o jogoId e o userId correspondem
+  const q = query(inscricoesRef, where('jogoId', '==', jogoId), where('userId', '==', uid));
+  
   const snapshot = await getDocs(q);
+  // Se a snapshot não estiver vazia, significa que encontrou uma inscrição
   return !snapshot.empty;
 };
