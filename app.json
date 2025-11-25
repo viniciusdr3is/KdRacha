@@ -12,6 +12,14 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O aplicativo precisa acessar suas fotos para cadastrar a imagem do jogo."
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -19,7 +27,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.anonymous.KdRacha"
     },
     "web": {
       "favicon": "./assets/favicon.png"

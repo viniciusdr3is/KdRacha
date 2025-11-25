@@ -30,25 +30,38 @@ const CadastrarJogoScreen = () => {
 
   const navigation = useNavigation();
 
-  const selecionarImagem = async () => {
-    const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissao.granted === false) {
-      Alert.alert(
-        "Permissão necessária",
-        "É preciso permitir o acesso à galeria para selecionar uma imagem."
-      );
-      return;
-    }
+const selecionarImagem = async () => {
+    try {
+      console.log("Iniciando seleção de imagem...");
 
-    const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.7,
-    });
+     
+      const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log("Status da permissão:", permissao.status); 
 
-    if (!resultado.canceled) {
-      setImagem(resultado.assets[0].uri);
+      if (permissao.granted === false) {
+        Alert.alert(
+          "Permissão necessária",
+          "É preciso permitir o acesso à galeria para selecionar uma imagem."
+        );
+        return;
+      }
+
+      console.log("Abrindo galeria..."); 
+      const resultado = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaType,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.7,
+      });
+
+      console.log("Resultado da galeria:", resultado);
+
+      if (!resultado.canceled) {
+        setImagem(resultado.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Erro ao abrir galeria:", error); 
+      Alert.alert("Erro", "Não foi possível abrir a galeria.");
     }
   };
 
@@ -92,12 +105,11 @@ const CadastrarJogoScreen = () => {
         valor: valor.replace(",", "."),
         tipo,
         jogadores: 0,
-        imagem: imageUrl, // Usa a URL obtida do Storage
+        imagem: imageUrl, 
         dataHoraJogo,
         observacao,
       };
 
-      // ETAPA 3: Salvar os dados do jogo no Firestore
       await cadastrarJogo(novoJogo);
       Alert.alert("Sucesso", "Jogo cadastrado com sucesso!");
       navigation.goBack();
@@ -108,7 +120,7 @@ const CadastrarJogoScreen = () => {
         error.message || "Não foi possível cadastrar o jogo."
       );
     } finally {
-      setLoading(false); // Finaliza o carregamento (mesmo se der erro)
+      setLoading(false); 
     }
   };
   return (
